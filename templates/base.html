@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Factory System{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --sidebar-bg: #2c3e50; --sidebar-text: #ecf0f1; --sidebar-hover: rgba(255, 255, 255, 0.1);
+            --main-bg: #f4f7f6; --main-text: #333; --card-bg: #fff; --border-color: #ddd; --accent: #27ae60;
+        }
+        body.dark-mode {
+            --main-bg: #121212; --main-text: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; --sidebar-bg: #000000;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--main-bg); color: var(--main-text); display: flex; height: 100vh; overflow: hidden; transition: background 0.3s; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; transition: margin-left 0.3s ease; overflow-y: auto; z-index: 100;}
+        .sidebar.collapsed { margin-left: -260px; } /* সাইডবার লুকানোর ম্যাজিক */
+        .sidebar::-webkit-scrollbar { width: 5px; } .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 5px; }
+        
+        .brand { padding: 20px; font-size: 20px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
+        .nav-item { padding: 12px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-size: 15px; text-decoration: none; color: var(--sidebar-text); }
+        .nav-item:hover { background: var(--sidebar-hover); border-left: 4px solid var(--accent); }
+        .nav-item i.icon { width: 25px; text-align: center; margin-right: 10px; }
+        .nav-item .arrow { font-size: 12px; transition: transform 0.3s; }
+        .nav-item.active .arrow { transform: rotate(180deg); }
+
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.15); }
+        .submenu a { display: block; padding: 10px 20px 10px 55px; color: #bbb; text-decoration: none; font-size: 14px; transition: 0.2s; }
+        .submenu a:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+        .spacer { flex-grow: 1; }
+
+        /* Main Content */
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s ease; }
+        
+        .topbar { height: 60px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; z-index: 10;}
+        .topbar-left { display: flex; align-items: center; gap: 15px; }
+        .toggle-sidebar-btn { background: transparent; border: none; color: var(--main-text); font-size: 20px; cursor: pointer; padding: 5px; }
+        .topbar-title { font-size: 18px; font-weight: 600; }
+        
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { background: #e74c3c; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
+
+        .content-area { flex: 1; padding: 20px; overflow-y: auto; cursor: pointer;}
+
+        /* Dynamic Footer */
+        .app-footer { height: 40px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 13px; color: #7f8c8d; font-weight: 500;}
+
+        /* Theme Panel */
+        .theme-panel { position: fixed; right: -320px; top: 0; width: 320px; height: 100vh; background: var(--card-bg); box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1000; padding: 20px; overflow-y: auto; border-left: 1px solid var(--border-color);}
+        .theme-panel.open { right: 0; }
+        .theme-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
+        .close-panel { cursor: pointer; font-size: 20px; color: #e74c3c; }
+        .theme-section-title { font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; color: #7f8c8d; }
+        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .color-btn { height: 40px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+        .color-btn:hover { transform: scale(1.1); }
+        .toggle-container { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 20px; cursor: pointer; }
+        .toggle-switch { width: 40px; height: 20px; background: #ccc; border-radius: 20px; position: relative; transition: 0.3s; }
+        .toggle-switch::before { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s; }
+        body.dark-mode .toggle-switch { background: var(--accent); }
+        body.dark-mode .toggle-switch::before { left: 22px; }
+
+    </style>
+</head>
+<body id="app-body">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="app-sidebar">
+        <div class="brand"><i class="fa-solid fa-industry"></i> {{ factory_name }}</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><div><i class="fa-solid fa-chart-line icon"></i> Dashboard</div></a>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-calendar-days icon"></i> Planning</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Master Plan</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-boxes-stacked icon"></i> General Store</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Requisition</a><a href="#">Stock Entry</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-layer-group icon"></i> Yarn Store</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Yarn Receive</a><a href="#">Yarn Issue</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-stopwatch icon"></i> IE Department</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">SMV Calculation</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-users-gear icon"></i> HR & Admin</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Employee List</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-shirt icon"></i> Sample</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Development</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-cogs icon"></i> Knitting</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Daily Production</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-link icon"></i> Linking</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Daily Production</a></div>
+        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-check-double icon"></i> Finishing</div><i class="fa-solid fa-chevron-down arrow"></i></div>
+        <div class="submenu"><a href="#">Iron & Packing</a></div>
+        
+        <div class="spacer"></div>
+        {% if request.user.is_superuser %}
+        <!-- নতুন সিস্টেম সেটিংস মেনু -->
+        <a href="{% url 'system_settings' %}" class="nav-item" style="border-top: 1px solid rgba(255,255,255,0.1);">
+            <div><i class="fa-solid fa-gears icon"></i> System Settings</div>
+        </a>
+        <a href="{% url 'user_management' %}" class="nav-item">
+            <div><i class="fa-solid fa-user-shield icon"></i> User Management</div>
+        </a>
+        {% endif %}
+        <div class="nav-item" onclick="toggleThemePanel()" style="background: rgba(0,0,0,0.2);"><div><i class="fa-solid fa-palette icon"></i> Personalize</div></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+        <!-- Topbar with Hamburger Menu -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar(event)"><i class="fa-solid fa-bars"></i></button>
+                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+            </div>
+            <div class="user-info">
+                <span><i class="fa-solid fa-circle-user"></i> Hello, {{ request.user.first_name|default:request.user.username }}</span>
+                <a href="{% url 'logout' %}" class="logout-btn"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
+        </div>
+
+        <!-- Dynamic Content Area -->
+        <div class="content-area" id="main-content" onclick="autoHideSidebar()">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Dynamic Footer -->
+        <div class="app-footer">
+            <div style="flex:1; text-align:left;">App {{ app_version }}</div>
+            <div style="flex:1; text-align:center;">{{ copyright_text }}</div>
+            <div style="flex:1; text-align:right;">{{ developer_credit }}</div>
+        </div>
+    </div>
+
+    <!-- Theme Panel -->
+    <div class="theme-panel" id="themePanel">
+        <div class="theme-header">
+            <h3><i class="fa-solid fa-palette"></i> Personalize</h3>
+            <i class="fa-solid fa-xmark close-panel" onclick="toggleThemePanel()"></i>
+        </div>
+        <div class="toggle-container" onclick="toggleDarkMode()">
+            <span style="font-weight: 600;"><i class="fa-solid fa-moon"></i> Dark Mode</span>
+            <div class="toggle-switch"></div>
+        </div>
+        <div class="theme-section-title">Solid Colors</div><div class="color-grid" id="solid-colors"></div>
+        <div class="theme-section-title">Gradient Colors</div><div class="color-grid" id="gradient-colors"></div>
+        <div class="theme-section-title">Pattern Designs</div><div class="color-grid" id="pattern-colors"></div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // --- Sidebar Show/Hide Logic ---
+        const sidebar = document.getElementById('app-sidebar');
+        
+        function toggleSidebar(event) {
+            event.stopPropagation(); // Prevents auto-hide from triggering immediately
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // বডিতে ক্লিক করলে সাইডবার হাইড হওয়ার লজিক
+        function autoHideSidebar() {
+            if (!sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+            }
+        }
+
+        // --- Submenu Logic ---
+        function toggleSubmenu(element) {
+            document.querySelectorAll('.nav-item.active').forEach(item => {
+                if (item !== element) { item.classList.remove('active'); item.nextElementSibling.style.maxHeight = null; }
+            });
+            element.classList.toggle('active');
+            let submenu = element.nextElementSibling;
+            if (submenu.style.maxHeight) { submenu.style.maxHeight = null; } 
+            else { submenu.style.maxHeight = submenu.scrollHeight + "px"; }
+        }
+
+        // --- Theme Engine Logic ---
+        function toggleThemePanel() { document.getElementById('themePanel').classList.toggle('open'); }
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark-mode', document.body.classList.contains('dark-mode') ? 'yes' : 'no');
+        }
+        if (localStorage.getItem('dark-mode') === 'yes') { document.body.classList.add('dark-mode'); }
+
+        const root = document.documentElement;
+        const solidColors = ['#2c3e50', '#8e44ad', '#2980b9', '#27ae60', '#d35400', '#c0392b', '#16a085', '#34495e', '#ff4757', '#1e90ff'];
+        const gradientColors = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%)', 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', 'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)', 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #0ba360 0%, #3cba92 100%)'];
+        const patternColors = ['radial-gradient(circle, #2c3e50 10%, #000000 100%)', 'radial-gradient(circle, #8e44ad 10%, #341f97 100%)', 'repeating-linear-gradient(45deg, #2c3e50, #2c3e50 10px, #34495e 10px, #34495e 20px)', 'repeating-linear-gradient(45deg, #16a085, #16a085 10px, #1abc9c 10px, #1abc9c 20px)', 'linear-gradient(to right, #ff416c, #ff4b2b)', 'linear-gradient(to right, #11998e, #38ef7d)', 'linear-gradient(to right, #fc4a1a, #f7b733)', 'linear-gradient(to bottom right, #00c6ff, #0072ff)', 'repeating-radial-gradient(circle, #34495e, #34495e 5px, #2c3e50 5px, #2c3e50 10px)', 'linear-gradient(135deg, #2c3e50, #000)'];
+
+        function applyTheme(backgroundData) {
+            root.style.setProperty('--sidebar-bg', backgroundData);
+            localStorage.setItem('sidebar-bg', backgroundData);
+        }
+
+        function generateButtons(array, containerId) {
+            const container = document.getElementById(containerId);
+            array.forEach(bg => {
+                const btn = document.createElement('div'); btn.className = 'color-btn'; btn.style.background = bg;
+                btn.onclick = () => applyTheme(bg); container.appendChild(btn);
+            });
+        }
+
+        generateButtons(solidColors, 'solid-colors'); generateButtons(gradientColors, 'gradient-colors'); generateButtons(patternColors, 'pattern-colors');
+        const savedBg = localStorage.getItem('sidebar-bg');
+        if (savedBg) { root.style.setProperty('--sidebar-bg', savedBg); }
+    </script>
+</body>
+</html>

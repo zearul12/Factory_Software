@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - {{ factory_name }}{% endblock %}
+{% block page_title %}User Roles & Permissions{% endblock %}
+
+{% block content %}
+<style>
+    /* শুধু এই পেজের জন্য প্রয়োজনীয় স্টাইল */
+    .card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
+    .card-title { color: var(--main-text); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; font-size: 18px;}
+    
+    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; align-items: end;}
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--main-text); font-size: 13px;}
+    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; height: 35px; background: var(--main-bg); color: var(--main-text);}
+    .btn-submit { width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; height: 35px;}
+    
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--main-text);}
+    th { background-color: rgba(0,0,0,0.03); font-weight: 600; }
+    
+    .edit-input { width: 100%; padding: 4px; border: 1px solid #007bff; border-radius: 3px; display: none; background: var(--main-bg); color: var(--main-text);}
+    .perm-select { padding: 4px; border-radius: 3px; border: 1px solid #ccc; display: none; background: var(--main-bg); color: var(--main-text);}
+    
+    .btn-sm { padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer; color: white; font-weight: bold; font-size: 12px; margin-right: 4px;}
+    .btn-edit { background: #007bff; } .btn-save { background: #28a745; display: none; }
+    .btn-hold { background: #ffc107; color: #333; } .btn-active { background: #dc3545; }
+    
+    .status-badge { padding: 3px 6px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .status-active { background: #d4edda; color: #155724; } .status-hold { background: #fff3cd; color: #856404; }
+    
+    #toast { visibility: hidden; min-width: 250px; background-color: #28a745; color: #fff; text-align: center; border-radius: 4px; padding: 12px; position: fixed; right: 20px; top: 80px; font-weight: bold; z-index: 100;}
+    #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+</style>
+
+<!-- Form Area -->
+<div class="card">
+    <h3 class="card-title">Add New System User</h3>
+    <form method="POST" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Company</label>
+                <select name="company_name" required>
+                    {% for comp in companies %}
+                        <option value="{{ comp.factory_name }}">{{ comp.factory_name }}</option>
+                    {% empty %}
+                        <option value="Smart Factory System">Smart Factory System</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Emp ID</label><input type="text" name="employee_id"></div>
+            <div class="form-group"><label>Full Name</label><input type="text" name="full_name" required></div>
+            <div class="form-group"><label>Login ID</label><input type="text" name="user_id" required></div>
+            <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+            <div class="form-group"><label>Designation</label><input type="text" name="designation"></div>
+            <div class="form-group"><label>Department</label><input type="text" name="department"></div>
+            <div class="form-group">
+                <button type="submit" class="btn-submit">Create User</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Table Area -->
+<div class="card">
+    <h3 class="card-title">System Users & Permissions</h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Company</th><th>Emp ID</th><th>Name</th><th>Login ID</th><th>Password</th><th>Designation</th><th>Dept.</th><th>Status</th>
+                    {% for page in pages %}
+                        <th style="background:rgba(0,0,0,0.05); border-left:1px solid var(--border-color);">{{ page }}</th>
+                    {% endfor %}
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in user_data_list %}
+                <tr id="row-{{ item.user.id }}">
+                    <td>
+                        <span class="display-val">{{ item.profile.company_name|default:"-" }}</span>
+                        <select class="edit-input" data-field="company">
+                            {% for comp in companies %}
+                                <option value="{{ comp.factory_name }}" {% if item.profile.company_name == comp.factory_name %}selected{% endif %}>{{ comp.factory_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><span class="display-val">{{ item.profile.employee_id|default:"-" }}</span><input type="text" class="edit-input" data-field="emp_id" value="{{ item.profile.employee_id|default:"" }}"></td>
+                    <td><span class="display-val">{{ item.user.first_name }}</span><input type="text" class="edit-input" data-field="name" value="{{ item.user.first_name }}"></td>
+                    <td style="font-weight:bold;">{{ item.user.username }}</td>
+                    <td><span class="display-val" style="color:#aaa;">********</span><input type="text" class="edit-input" data-field="password" placeholder="New pass..."></td>
+                    <td><span class="display-val">{{ item.profile.designation|default:"-" }}</span><input type="text" class="edit-input" data-field="designation" value="{{ item.profile.designation|default:"" }}"></td>
+                    <td><span class="display-val">{{ item.profile.department|default:"-" }}</span><input type="text" class="edit-input" data-field="department" value="{{ item.profile.department|default:"" }}"></td>
+                    <td>
+                        {% if item.profile.is_active_user %}<span class="status-badge status-active">Active</span>
+                        {% else %}<span class="status-badge status-hold">On Hold</span>{% endif %}
+                    </td>
+
+                    {% for page in pages %}
+                    <td style="border-left:1px solid var(--border-color);">
+                        {% if item.user.is_superuser %}
+                            <span style="color:#e74c3c; font-size:12px; font-weight:bold;">All Access</span>
+                        {% else %}
+                            {% for p_name, access in item.permissions.items %}
+                                {% if p_name == page %}
+                                    <span class="display-val" style="font-size:12px; font-weight:bold; color:{% if access == 'Editor' %}#27ae60{% elif access == 'Viewer' %}#2980b9{% else %}gray{% endif %};">{{ access }}</span>
+                                    <select class="perm-select edit-input" data-page="{{ page }}">
+                                        <option value="Editor" {% if access == 'Editor' %}selected{% endif %}>Editor</option>
+                                        <option value="Viewer" {% if access == 'Viewer' %}selected{% endif %}>Viewer</option>
+                                        <option value="Not" {% if access == 'Not' %}selected{% endif %}>Not</option>
+                                    </select>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+
+                    <td style="text-align:right;">
+                        {% if not item.user.is_superuser %}
+                            <button class="btn-sm btn-edit" onclick="toggleEdit({{ item.user.id }})">Edit</button>
+                            <button class="btn-sm btn-save" onclick="saveUser({{ item.user.id }})">Save</button>
+                            <button class="btn-sm {% if item.profile.is_active_user %}btn-hold{% else %}btn-active{% endif %}" onclick="toggleHold({{ item.user.id }})">
+                                {% if item.profile.is_active_user %}Hold{% else %}Activate{% endif %}
+                            </button>
+                        {% else %}
+                            <span style="font-size: 11px; color:#888;">Locked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="toast">Data Saved Instantly!</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    function toggleEdit(userId) {
+        const row = document.getElementById('row-' + userId);
+        row.querySelectorAll('.display-val').forEach(el => el.style.display = 'none');
+        row.querySelectorAll('.edit-input').forEach(el => el.style.display = 'inline-block');
+        row.querySelector('.btn-edit').style.display = 'none';
+        row.querySelector('.btn-save').style.display = 'inline-block';
+    }
+
+    function saveUser(userId) {
+        const row = document.getElementById('row-' + userId);
+        const payload = {
+            action: 'save_edit', user_id: userId,
+            company_name: row.querySelector('[data-field="company"]').value,
+            employee_id: row.querySelector('[data-field="emp_id"]').value,
+            full_name: row.querySelector('[data-field="name"]').value,
+            password: row.querySelector('[data-field="password"]').value,
+            designation: row.querySelector('[data-field="designation"]').value,
+            department: row.querySelector('[data-field="department"]').value,
+            permissions: {}
+        };
+        row.querySelectorAll('.perm-select').forEach(select => { payload.permissions[select.getAttribute('data-page')] = select.value; });
+        fetch("{% url 'update_user_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') { showToast(); setTimeout(() => location.reload(), 600); }
+        });
+    }
+
+    function toggleHold(userId) {
+        fetch("{% url 'update_user_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({ action: 'hold_toggle', user_id: userId })
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') { showToast(); setTimeout(() => location.reload(), 400); }
+        });
+    }
+
+    function showToast() {
+        const toast = document.getElementById("toast"); toast.className = "show";
+        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+</script>
+{% endblock %}
