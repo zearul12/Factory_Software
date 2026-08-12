@@ -21,9 +21,7 @@ def login_view(request):
             messages.error(request, "Invalid User ID or Password!")
             return redirect('login')
 
-    context = {
-        'factory_name': 'Smart Factory System'
-    }
+    return render(request, 'login.html')
     return render(request, 'login.html', context)
 
 # সিকিউরিটি গার্ড: লগইন ছাড়া কেউ এই পেজে আসতে পারবে না
