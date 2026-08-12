@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+
+{% block title %}Knit Machine Entry - {{ factory_name }}{% endblock %}
+{% block page_title %}Knitting Machine Entry{% endblock %}
+
+{% block content %}
+<style>
+    .top-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;}
+    .card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color);}
+    .card-title { color: var(--main-text); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 16px; font-weight: bold;}
+    
+    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end;}
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--main-text); font-size: 13px;}
+    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--main-bg); color: var(--main-text); font-size: 14px;}
+    .readonly-field { background-color: rgba(0,0,0,0.05) !important; cursor: not-allowed; font-weight: bold;}
+    
+    .btn-group { display: flex; gap: 10px; margin-top: 15px; grid-column: span 3; justify-content: flex-end;}
+    .btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;}
+    .btn-primary { background: #27ae60; color: white; }
+    .btn-update { background: #007bff; color: white; display: none;}
+    .btn-warning { background: #f39c12; color: white; display: none;}
+    .btn-danger { background: #e74c3c; color: white; display: none;}
+    .btn-cancel { background: #95a5a6; color: white; display: none;}
+    
+    table { width: 100%; border-collapse: collapse; font-size: 13px;}
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--main-text);}
+    th { background-color: #e2e8f0; font-weight: 600; color: #1e293b; border-bottom: 2px solid #cbd5e1;}
+    body.dark-mode th { background-color: #1e293b; color: #e2e8f0; border-bottom: 2px solid #334155;}
+    
+    .table-row { cursor: pointer; transition: 0.2s; }
+    .table-row:hover { background-color: rgba(0,123,255,0.05); }
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+    .status-active { background: #d4edda; color: #155724; } .status-hold { background: #fff3cd; color: #856404; }
+
+    .search-input { max-width: 250px; width: 100%; padding: 6px 10px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); outline: none;}
+    #ajax-toast { visibility: hidden; min-width: 250px; text-align: center; border-radius: 4px; padding: 12px; position: fixed; right: 20px; top: 80px; font-weight: bold; z-index: 100; color: white;}
+    #ajax-toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 3.5s; }
+    .toast-success { background-color: #28a745;} .toast-error { background-color: #e74c3c;}
+    /* Custom Modal CSS */
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
+    .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+    .custom-modal-box { background: var(--card-bg); padding: 30px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
+    .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+    .modal-icon { font-size: 50px; color: #e74c3c; margin-bottom: 15px; }
+    .modal-title { font-size: 22px; margin-bottom: 10px; color: var(--main-text); font-weight: bold;}
+    .modal-text { font-size: 15px; color: #7f8c8d; margin-bottom: 25px; line-height: 1.5; }
+    .btn-cancel { padding: 10px 25px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;}
+    .btn-confirm { padding: 10px 25px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;}
+</style>
+
+<div class="top-grid">
+    <!-- Entry Form -->
+    <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-desktop"></i> Machine Entry Form</h3>
+        <form id="machineForm" onsubmit="event.preventDefault(); submitForm();" autocomplete="off">
+            <input type="hidden" id="machine_id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Brand Name</label>
+                    <select id="brand_name" required onchange="generateAutoFields()">
+                        <option value="">-- Select Brand --</option>
+                        {% for brand in brands %}
+                            <option value="{{ brand }}">{{ brand }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Line No.</label>
+                    <input type="text" id="line_no" required oninput="generateAutoFields()" placeholder="e.g. A">
+                </div>
+                <div class="form-group">
+                    <label>Machine No.</label>
+                    <input type="text" id="machine_no" required oninput="generateAutoFields()" placeholder="e.g. 01">
+                </div>
+                
+                <div class="form-group">
+                    <label>Gauge (Auto)</label>
+                    <input type="text" id="gauge" class="readonly-field" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Line & M/C no. (Auto)</label>
+                    <input type="text" id="line_mc_no" class="readonly-field" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <input type="text" id="status_show" class="readonly-field" value="Active" readonly>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-cancel" id="btnCancel" onclick="resetForm()">Clear</button>
+                    <button type="button" class="btn btn-danger" id="btnDelete" onclick="deleteMachine()">Delete</button>
+                    <button type="button" class="btn btn-warning" id="btnHold" onclick="toggleHold()">Hold / Active</button>
+                    <button type="submit" class="btn btn-update" id="btnUpdate">Update Machine</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">Save Machine</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-chart-pie"></i> Machine Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Brand Name</th>
+                    <th style="text-align: center;">Line Qty</th>
+                    <th style="text-align: center;">Machine Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in summary %}
+                <tr>
+                    <td style="font-weight: 500;">{{ item.brand }}</td>
+                    <td style="text-align: center;">{{ item.lines }}</td>
+                    <td style="text-align: center;">{{ item.mcs }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: rgba(0,0,0,0.05); font-weight: bold;">
+                    <td>Total</td>
+                    <td style="text-align: center;">{{ total_lines }}</td>
+                    <td style="text-align: center;">{{ total_mcs }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- View Table -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 class="card-title" style="margin-bottom: 0;"><i class="fa-solid fa-list"></i> All Knit Machines</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <!-- নতুন Bulk Delete বাটন (শুরুতে লুকানো থাকবে) -->
+            <button class="btn btn-danger" id="btnBulkDelete" style="display: none; padding: 6px 15px;" onclick="bulkDelete()">
+                <i class="fa-solid fa-trash-can"></i> Delete Selected
+            </button>
+            <input type="text" id="tableSearch" class="search-input" style="margin-bottom: 0;" placeholder="Search by Brand, Line or M/C...">
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto; max-height: 400px;">
+        <table>
+            <thead>
+                <tr>
+                    <!-- নতুন সিলেক্ট অল চেকবক্স -->
+                    <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor: pointer;">
+                    </th>
+                    <th>Brand Name</th>
+                    <th>Gauge</th>
+                    <th>Line No.</th>
+                    <th>Machine No.</th>
+                    <th>Line & M/C no.</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="machineTableBody">
+                {% for m in machines %}
+                <tr class="table-row">
+                    <!-- রো চেকবক্স -->
+                    <td style="text-align: center;" onclick="event.stopPropagation();">
+                        <input type="checkbox" class="row-checkbox" value="{{ m.id }}" onclick="toggleBulkDeleteBtn()" style="cursor: pointer;">
+                    </td>
+                    
+                    <!-- ডাটা কলামগুলো (সঠিক ফাংশন সহ) -->
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')">{{ m.brand_name }}</td>
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')">{{ m.gauge }}</td>
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')">{{ m.line_no }}</td>
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')">{{ m.machine_no }}</td>
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')" style="font-weight: 600; color: #007bff;">{{ m.line_mc_no }}</td>
+                    <td onclick="loadRowToForm('{{ m.id }}', '{{ m.brand_name }}', '{{ m.gauge }}', '{{ m.line_no }}', '{{ m.machine_no }}', '{{ m.line_mc_no }}', '{{ m.is_active }}')">
+                        {% if m.is_active %}<span class="status-badge status-active">Active</span>
+                        {% else %}<span class="status-badge status-hold">On Hold</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="ajax-toast"></div>
+
+<!-- Custom Delete Modal (For Single & Bulk) -->
+<div id="delete-modal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+        <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 class="modal-title">Confirm Delete</h3>
+        <p class="modal-text" id="modal-delete-text">Are you sure you want to delete?</p>
+        <div style="display: flex; justify-content: center; gap: 15px;">
+            <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-confirm" onclick="executeDelete()">Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    // 1. Auto Generate Logic
+    function generateAutoFields() {
+        let brand = document.getElementById('brand_name').value;
+        let line = document.getElementById('line_no').value.trim();
+        let mc = document.getElementById('machine_no').value.trim();
+
+        if (brand) {
+            let parts = brand.trim().split(' ');
+            document.getElementById('gauge').value = parts[parts.length - 1]; // Last word
+            
+            let prefix = brand.substring(0, 2).toUpperCase();
+            if(line && mc) {
+                document.getElementById('line_mc_no').value = `${prefix}-${line}-${mc}`;
+            } else {
+                document.getElementById('line_mc_no').value = '';
+            }
+        } else {
+            document.getElementById('gauge').value = '';
+            document.getElementById('line_mc_no').value = '';
+        }
+    }
+
+    // 2. Load Row to Form (Row Click)
+    function loadRowToForm(id, brand, gauge, line, mc, line_mc, isActive) {
+        document.getElementById('machine_id').value = id;
+        document.getElementById('brand_name').value = brand;
+        document.getElementById('gauge').value = gauge;
+        document.getElementById('line_no').value = line;
+        document.getElementById('machine_no').value = mc;
+        document.getElementById('line_mc_no').value = line_mc;
+        document.getElementById('status_show').value = (isActive === 'True') ? 'Active' : 'On Hold';
+
+        // Button Visibility Magic
+        document.getElementById('btnSave').style.display = 'none';
+        document.getElementById('btnUpdate').style.display = 'block';
+        document.getElementById('btnHold').style.display = 'block';
+        document.getElementById('btnDelete').style.display = 'block';
+        document.getElementById('btnCancel').style.display = 'block';
+    }
+
+    function resetForm() {
+        document.getElementById('machineForm').reset();
+        document.getElementById('machine_id').value = '';
+        document.getElementById('btnSave').style.display = 'block';
+        document.getElementById('btnUpdate').style.display = 'none';
+        document.getElementById('btnHold').style.display = 'none';
+        document.getElementById('btnDelete').style.display = 'none';
+        document.getElementById('btnCancel').style.display = 'none';
+    }
+
+    // 3. Save / Update Form Submission
+    function submitForm() {
+        let id = document.getElementById('machine_id').value;
+        let payload = {
+            action: id ? 'update' : 'save_new',
+            machine_id: id,
+            brand_name: document.getElementById('brand_name').value,
+            gauge: document.getElementById('gauge').value,
+            line_no: document.getElementById('line_no').value.toUpperCase(),
+            machine_no: document.getElementById('machine_no').value,
+            line_mc_no: document.getElementById('line_mc_no').value
+        };
+
+        // Data Retain Magic (সেশন স্টোরেজে সেভ রাখা)
+        if(!id) {
+            sessionStorage.setItem('keep_data', 'yes');
+            sessionStorage.setItem('kb_brand', payload.brand_name);
+            sessionStorage.setItem('kb_line', payload.line_no);
+            sessionStorage.setItem('kb_mc', payload.machine_no);
+        }
+
+        sendAjax(payload);
+    }
+
+    function toggleHold() { sendAjax({ action: 'hold_toggle', machine_id: document.getElementById('machine_id').value }); }
+
+    // AJAX Call
+    function sendAjax(payload) {
+        fetch("{% url 'update_knit_machine_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                location.reload(); // পেজ রিলোড হলে নিচে OnLoad লজিক কাজ করবে
+            } else {
+                showToast(data.msg, "error");
+                sessionStorage.removeItem('keep_data'); // এরর আসলে ডাটা রাখবে না
+            }
+        });
+    }
+
+    // 4. On Page Load (Data Retain & Cursor Select Magic)
+    window.onload = function() {
+        if(sessionStorage.getItem('keep_data') === 'yes') {
+            document.getElementById('brand_name').value = sessionStorage.getItem('kb_brand');
+            document.getElementById('line_no').value = sessionStorage.getItem('kb_line');
+            document.getElementById('machine_no').value = sessionStorage.getItem('kb_mc');
+            
+            generateAutoFields(); // অটো জেনারেট ফিল্ডগুলো পূরণ করবে
+            
+            // ম্যাজিক: কার্সর সিলেক্ট করে রাখা
+            let mcField = document.getElementById('machine_no');
+            mcField.focus();
+            mcField.select();
+
+            sessionStorage.removeItem('keep_data');
+            showToast("Machine saved! Ready for next entry.", "success");
+        }
+    };
+
+    // 5. Simple Search Filter
+    document.getElementById('tableSearch').addEventListener('input', function(e) {
+        let term = e.target.value.toLowerCase();
+        let rows = document.querySelectorAll('#machineTableBody tr');
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+        });
+    });
+
+    function showToast(msg, type) {
+        const toast = document.getElementById("ajax-toast");
+        toast.innerText = msg;
+        toast.className = "show " + (type === 'error' ? "toast-error" : "toast-success");
+        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 4000);
+    }
+
+    // --- Bulk Delete Magic ---
+    function toggleSelectAll(source) {
+        let checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => {
+            // শুধু যেসব রো সার্চে দেখা যাচ্ছে, সেগুলোতেই টিক পড়বে
+            if (cb.closest('tr').style.display !== 'none') { 
+                cb.checked = source.checked;
+            }
+        });
+        toggleBulkDeleteBtn();
+    }
+
+    function toggleBulkDeleteBtn() {
+        let checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+        document.getElementById('btnBulkDelete').style.display = (checkedCount > 0) ? 'block' : 'none';
+        
+        // যদি সব আনচেক হয়ে যায়, তাহলে হেডারের চেকবক্সও আনচেক হবে
+        if (checkedCount === 0) document.getElementById('selectAll').checked = false;
+    }
+
+    // --- Custom Modal Delete Logic (Single & Bulk) ---
+    let deleteType = ''; // 'single' নাকি 'bulk' তা মনে রাখবে
+
+    function deleteMachine() {
+        deleteType = 'single';
+        document.getElementById('modal-delete-text').innerHTML = `Are you sure you want to delete this machine?`;
+        document.getElementById('delete-modal').classList.add('show');
+    }
+
+    function bulkDelete() {
+        let checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+        if(checkedCount > 0) {
+            deleteType = 'bulk';
+            document.getElementById('modal-delete-text').innerHTML = `Are you sure you want to delete <b style="color:var(--main-text);">${checkedCount}</b> machines at once?`;
+            document.getElementById('delete-modal').classList.add('show');
+        }
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('delete-modal').classList.remove('show');
+        deleteType = '';
+    }
+
+    function executeDelete() {
+        if (deleteType === 'single') {
+            sendAjax({ action: 'delete', machine_id: document.getElementById('machine_id').value });
+        } 
+        else if (deleteType === 'bulk') {
+            let selectedIDs = [];
+            document.querySelectorAll('.row-checkbox:checked').forEach(cb => {
+                selectedIDs.push(cb.value);
+            });
+            sendAjax({ action: 'bulk_delete', machine_ids: selectedIDs });
+        }
+        closeDeleteModal();
+    }
+</script>
+{% endblock %}

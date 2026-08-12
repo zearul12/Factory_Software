@@ -30,7 +30,9 @@
         .nav-item .arrow { font-size: 12px; transition: transform 0.3s; }
         .nav-item.active .arrow { transform: rotate(180deg); }
 
-        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.15); }
+        /* Updated Submenu CSS */
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; background: rgba(0,0,0,0.15); flex-shrink: 0;}
+        .submenu.show { max-height: 500px; } /* ম্যাজিক ক্লাস! এটি মেনুকে নিচে নামাবে */
         .submenu a { display: block; padding: 10px 20px 10px 55px; color: #bbb; text-decoration: none; font-size: 14px; transition: 0.2s; }
         .submenu a:hover { color: #fff; background: rgba(255,255,255,0.05); }
 
@@ -73,30 +75,92 @@
 
     <!-- Sidebar -->
     <div class="sidebar" id="app-sidebar">
-        <div class="brand"><i class="fa-solid fa-industry"></i> {{ factory_name }}</div>
-        <a href="{% url 'dashboard' %}" class="nav-item"><div><i class="fa-solid fa-chart-line icon"></i> Dashboard</div></a>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-calendar-days icon"></i> Planning</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Master Plan</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-boxes-stacked icon"></i> General Store</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Requisition</a><a href="#">Stock Entry</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-layer-group icon"></i> Yarn Store</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Yarn Receive</a><a href="#">Yarn Issue</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-stopwatch icon"></i> IE Department</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">SMV Calculation</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-users-gear icon"></i> HR & Admin</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Employee List</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-shirt icon"></i> Sample</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Development</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-cogs icon"></i> Knitting</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Daily Production</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-link icon"></i> Linking</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Daily Production</a></div>
-        <div class="nav-item" onclick="toggleSubmenu(this)"><div><i class="fa-solid fa-check-double icon"></i> Finishing</div><i class="fa-solid fa-chevron-down arrow"></i></div>
-        <div class="submenu"><a href="#">Iron & Packing</a></div>
+        <div class="brand"><i class="fa-solid fa-industry"></i> {{ factory_name|default:"Smart Factory" }}</div>
+        
+        <a href="{% url 'dashboard' %}" class="nav-item">
+            <div><i class="fa-solid fa-chart-line icon"></i> Dashboard</div>
+        </a>
+
+        <!-- 1. Planning -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-calendar-days icon"></i> Planning</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="{% url 'buyer_entry' %}">Buyer Entry</a>
+            <a href="#">Master Plan</a>
+            <a href="#">Machine Allocation</a>
+        </div>
+
+        <!-- 2. General Store -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-boxes-stacked icon"></i> General Store</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Requisition</a>
+            <a href="#">Stock Entry</a>
+        </div>
+
+        <!-- 3. Yarn Store -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-layer-group icon"></i> Yarn Store</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Yarn Receive</a>
+            <a href="#">Yarn Issue</a>
+        </div>
+
+        <!-- 4. IE Department -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-stopwatch icon"></i> IE Department</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">SMV Calculation</a>
+        </div>
+
+        <!-- 5. HR & Admin -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-users-gear icon"></i> HR & Admin</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="{% url 'knit_machine_entry' %}">Knit. Machine Entry</a>
+            <a href="#">Employee List</a>
+        </div>
+
+        <!-- 6. Sample -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-shirt icon"></i> Sample</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Development</a>
+        </div>
+
+        <!-- 7. Knitting -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-cogs icon"></i> Knitting</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Daily Production</a>
+        </div>
+
+        <!-- 8. Linking -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-link icon"></i> Linking</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Daily Production</a>
+        </div>
+
+        <!-- 9. Finishing -->
+        <div class="nav-item" onclick="toggleSubmenu(this)">
+            <div><i class="fa-solid fa-check-double icon"></i> Finishing</div><i class="fa-solid fa-chevron-down arrow"></i>
+        </div>
+        <div class="submenu">
+            <a href="#">Iron & Packing</a>
+        </div>
         
         <div class="spacer"></div>
+        
         {% if request.user.is_superuser %}
-        <!-- নতুন সিস্টেম সেটিংস মেনু -->
         <a href="{% url 'system_settings' %}" class="nav-item" style="border-top: 1px solid rgba(255,255,255,0.1);">
             <div><i class="fa-solid fa-gears icon"></i> System Settings</div>
         </a>
@@ -104,7 +168,10 @@
             <div><i class="fa-solid fa-user-shield icon"></i> User Management</div>
         </a>
         {% endif %}
-        <div class="nav-item" onclick="toggleThemePanel()" style="background: rgba(0,0,0,0.2);"><div><i class="fa-solid fa-palette icon"></i> Personalize</div></div>
+        
+        <div class="nav-item" onclick="toggleThemePanel()" style="background: rgba(0,0,0,0.2);">
+            <div><i class="fa-solid fa-palette icon"></i> Personalize</div>
+        </div>
     </div>
 
     <!-- Main Content -->
@@ -166,15 +233,26 @@
             }
         }
 
-        // --- Submenu Logic ---
+        // --- Bulletproof Sidebar Submenu Logic ---
         function toggleSubmenu(element) {
+            // অন্য কোনো মেনু খোলা থাকলে বন্ধ করবে
             document.querySelectorAll('.nav-item.active').forEach(item => {
-                if (item !== element) { item.classList.remove('active'); item.nextElementSibling.style.maxHeight = null; }
+                if (item !== element) { 
+                    item.classList.remove('active'); 
+                    if (item.nextElementSibling && item.nextElementSibling.classList.contains('submenu')) {
+                        item.nextElementSibling.classList.remove('show');
+                    }
+                }
             });
+            
+            // ক্লিক করা মেনুর অ্যারো ঘুরাবে
             element.classList.toggle('active');
+            
+            // ক্লিক করা মেনুটি নিচে নামাবে
             let submenu = element.nextElementSibling;
-            if (submenu.style.maxHeight) { submenu.style.maxHeight = null; } 
-            else { submenu.style.maxHeight = submenu.scrollHeight + "px"; }
+            if (submenu && submenu.classList.contains('submenu')) {
+                submenu.classList.toggle('show');
+            }
         }
 
         // --- Theme Engine Logic ---

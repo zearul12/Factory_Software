@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Buyer Entry - {{ factory_name }}{% endblock %}
+{% block page_title %}Buyer Management{% endblock %}
+
+{% block content %}
+<style>
+    .card { background: var(--card-bg); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 20px;}
+    .card-title { color: var(--main-text); margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 18px; font-weight: 600;}
+    
+    .form-group { display: flex; gap: 15px; align-items: flex-end; max-width: 600px;}
+    .form-group div { flex: 1; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--main-text); font-size: 13px;}
+    .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--main-bg); color: var(--main-text); font-size: 14px;}
+    .btn-primary { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; height: 40px; white-space: nowrap;}
+    
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--main-text);}
+    /* টেবিল হেডারের নতুন ডিজাইন (ডার্ক মোড সাপোর্ট সহ) */
+    th { 
+        background-color: #e2e8f0; /* সুন্দর একটি গাঢ় প্রফেশনাল কালার */
+        font-weight: 600; 
+        color: #1e293b;
+        border-bottom: 2px solid #cbd5e1; /* নিচের বর্ডার দিয়ে হেডারকে আলাদা করা হয়েছে */
+    }
+    body.dark-mode th {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        border-bottom: 2px solid #334155;
+    }
+    
+    .edit-input { width: 100%; padding: 6px; border: 1px solid #007bff; border-radius: 3px; display: none; background: var(--main-bg); color: var(--main-text);}
+    
+    .btn-sm { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 12px; margin-right: 5px; transition: 0.2s;}
+    .btn-edit { background: #007bff; } .btn-save { background: #28a745; display: none; }
+    .btn-hold { background: #ffc107; color: #333; } .btn-active { background: #dc3545; }
+    .btn-delete { background: #e74c3c; } .btn-delete:hover { background: #c0392b; }
+    
+    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+    .status-active { background: #d4edda; color: #155724; } .status-hold { background: #fff3cd; color: #856404; }
+    
+    .msg-success { background: #d4edda; color: #155724; padding: 12px; border-radius: 4px; margin-bottom: 20px; font-weight: bold; border: 1px solid #c3e6cb;}
+    .msg-error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 20px; font-weight: bold; border: 1px solid #f5c6cb;}
+
+    /* Custom Toast for AJAX errors */
+    #ajax-toast { visibility: hidden; min-width: 250px; text-align: center; border-radius: 4px; padding: 12px; position: fixed; right: 20px; top: 80px; font-weight: bold; z-index: 100; color: white;}
+    #ajax-toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 3.5s; }
+    .toast-success { background-color: #28a745; box-shadow: 0 4px 8px rgba(40,167,69,0.3);}
+    .toast-error { background-color: #e74c3c; box-shadow: 0 4px 8px rgba(231,76,60,0.3);}
+
+    /* Custom Modal */
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
+    .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+    .custom-modal-box { background: var(--card-bg); padding: 30px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
+    .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+    .modal-icon { font-size: 50px; color: #e74c3c; margin-bottom: 15px; }
+    .modal-title { font-size: 22px; margin-bottom: 10px; color: var(--main-text); font-weight: bold;}
+    .modal-text { font-size: 15px; color: #7f8c8d; margin-bottom: 25px; line-height: 1.5; }
+    .btn-cancel { padding: 10px 25px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;}
+    .btn-confirm { padding: 10px 25px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;}
+    
+    /* সার্চ বক্সের সাইজ ও লুক আপডেট */
+    .search-input { 
+        max-width: 220px; /* বক্সের সাইজ ছোট ও মানানসই করা হলো */
+        width: 100%; 
+        display: block; /* লেখাকে উপরে আর বক্সকে নিচে রাখার জন্য */
+        padding: 6px 10px; 
+        margin-top: 8px; 
+        border: 1px solid var(--border-color); 
+        border-radius: 4px; 
+        font-size: 13px; 
+        font-weight: normal; /* সার্চের লেখা যেন হেডারের মতো বোল্ড না হয় */
+        background: var(--main-bg); 
+        color: var(--main-text); 
+        outline: none; 
+        transition: 0.2s;
+    }
+    .search-input:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+</style>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">
+            <i class="fa-solid fa-circle-info"></i> {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Add New Buyer -->
+<div class="card">
+    <h3 class="card-title"><i class="fa-solid fa-user-plus"></i> Add New Buyer</h3>
+    <form method="POST" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+            <div>
+                <label>Buyer Name</label>
+                <input type="text" name="buyer_name" required placeholder="e.g. H&M, Zara, Walmart">
+            </div>
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Save Buyer</button>
+        </div>
+    </form>
+</div>
+
+<!-- Buyer List -->
+<div class="card">
+    <h3 class="card-title"><i class="fa-solid fa-list"></i> Buyer List & Actions</h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">SL</th>
+                    <th>
+                        Buyer Name 
+                        <!-- নতুন সার্চ বক্স -->
+                        <input type="text" id="buyerSearch" class="search-input" placeholder="Search buyer... (e.g. T)" autocomplete="off">
+                    </th>
+                    <th style="width: 150px;">Status</th>
+                    <th style="text-align:right; width: 250px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for buyer in buyers %}
+                <tr id="row-{{ buyer.id }}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <span class="display-val font-weight-bold">{{ buyer.buyer_name }}</span>
+                        <input type="text" class="edit-input" id="input-{{ buyer.id }}" value="{{ buyer.buyer_name }}">
+                    </td>
+                    <td>
+                        {% if buyer.is_active %}
+                            <span class="status-badge status-active">Active</span>
+                        {% else %}
+                            <span class="status-badge status-hold">On Hold</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <button class="btn-sm btn-edit" onclick="toggleEdit({{ buyer.id }})"><i class="fa-solid fa-pen"></i> Edit</button>
+                        <button class="btn-sm btn-save" onclick="saveBuyer({{ buyer.id }})"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                        
+                        <button class="btn-sm {% if buyer.is_active %}btn-hold{% else %}btn-active{% endif %}" onclick="toggleHold({{ buyer.id }})">
+                            {% if buyer.is_active %}Hold{% else %}Activate{% endif %}
+                        </button>
+                        
+                        <button class="btn-sm btn-delete" onclick="openDeleteModal({{ buyer.id }}, '{{ buyer.buyer_name|escapejs }}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="ajax-toast"></div>
+
+<!-- Custom Delete Modal -->
+<div id="delete-modal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+        <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 class="modal-title">Delete Buyer?</h3>
+        <p class="modal-text">Are you sure you want to delete <b id="modal-buyer-name" style="color:var(--main-text);"></b>? <br><small>(Note: You cannot delete a buyer if they are linked to any orders. Use "Hold" instead.)</small></p>
+        <div style="display: flex; justify-content: center; gap: 15px;">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmDelete()">Yes, Delete it</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    let deleteId = null;
+
+    function toggleEdit(id) {
+        const row = document.getElementById('row-' + id);
+        row.querySelector('.display-val').style.display = 'none';
+        row.querySelector('.edit-input').style.display = 'inline-block';
+        row.querySelector('.btn-edit').style.display = 'none';
+        row.querySelector('.btn-save').style.display = 'inline-block';
+    }
+
+    function saveBuyer(id) {
+        const newName = document.getElementById('input-' + id).value;
+        sendAjax({action: 'save_edit', buyer_id: id, buyer_name: newName});
+    }
+
+    function toggleHold(id) {
+        sendAjax({action: 'hold_toggle', buyer_id: id});
+    }
+
+    function openDeleteModal(id, name) {
+        deleteId = id;
+        document.getElementById('modal-buyer-name').innerText = name;
+        document.getElementById('delete-modal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('delete-modal').classList.remove('show');
+        deleteId = null;
+    }
+
+    function confirmDelete() {
+        if(deleteId) {
+            sendAjax({action: 'delete', buyer_id: deleteId});
+            closeModal();
+        }
+    }
+
+    // মাস্টার AJAX ফাংশন
+    function sendAjax(payload) {
+        fetch("{% url 'update_buyer_ajax' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                showToast("Action completed successfully!", "success");
+                setTimeout(() => location.reload(), 600);
+            } else {
+                showToast(data.msg, "error"); // এরর আসলে লাল পপআপ দেখাবে
+            }
+        });
+    }
+
+    function showToast(msg, type) {
+        const toast = document.getElementById("ajax-toast");
+        toast.innerText = msg;
+        toast.className = "show " + (type === 'error' ? "toast-error" : "toast-success");
+        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 4000);
+    }
+
+// --- Priority Based Smart Search Logic ---
+    document.getElementById('buyerSearch').addEventListener('input', function(e) {
+        let searchTerm = e.target.value.toLowerCase().trim();
+        let tbody = document.querySelector('table tbody');
+        let rows = Array.from(tbody.querySelectorAll('tr'));
+        let matchedRows = [];
+
+        rows.forEach(row => {
+            let buyerName = row.querySelector('.display-val').innerText.toLowerCase();
+
+            if (buyerName.includes(searchTerm)) {
+                // Priority ম্যাজিক: নামের শুরুতে থাকলে প্রায়োরিটি ১, ভেতরে থাকলে ২
+                let priority = buyerName.startsWith(searchTerm) ? 1 : 2;
+                matchedRows.push({ row: row, name: buyerName, priority: priority });
+            } else {
+                row.style.display = 'none'; // না মিললে লুকিয়ে ফেলবে
+            }
+        });
+
+        // প্রায়োরিটি এবং A-Z অনুযায়ী সাজানো
+        matchedRows.sort((a, b) => {
+            if (a.priority !== b.priority) {
+                return a.priority - b.priority; 
+            }
+            return a.name.localeCompare(b.name); // প্রায়োরিটি সেম হলে A-Z করবে
+        });
+
+        // নতুন সিরিয়ালে টেবিল আপডেট করা
+        matchedRows.forEach((item, index) => {
+            tbody.appendChild(item.row); // সারিগুলোকে নতুন অর্ডারে বসাবে
+            item.row.style.display = ''; // সারিগুলো দৃশ্যমান করবে
+            item.row.querySelector('td:first-child').innerText = index + 1; // SL আপডেট করবে
+        });
+    });
+</script>
+{% endblock %}

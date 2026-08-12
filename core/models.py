@@ -33,3 +33,28 @@ class AppSetting(models.Model):
 
     def __str__(self):
         return self.key
+
+from django.db import models
+
+# ... (আগের FactorySetting এবং AppSetting কোডগুলো থাকবে) ...
+
+class Buyer(models.Model):
+    buyer_name = models.CharField(max_length=150, unique=True)
+    is_active = models.BooleanField(default=True) # Active নাকি Hold তা বোঝার জন্য
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.buyer_name
+    # ... (আগের Buyer কোডগুলোর নিচে এটি দিন) ...
+
+class KnitMachine(models.Model):
+    brand_name = models.CharField(max_length=100)
+    gauge = models.CharField(max_length=20, blank=True)
+    line_no = models.CharField(max_length=50)
+    machine_no = models.CharField(max_length=50)
+    line_mc_no = models.CharField(max_length=100, unique=True) # Ex: SH-A-01
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.line_mc_no
