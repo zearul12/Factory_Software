@@ -108,6 +108,7 @@ class OrderMaster(models.Model):
     reject_reason = models.TextField(blank=True, null=True) # রিজেক্ট হলে কারণ লেখার জন্য
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    changed_fields = models.TextField(blank=True, null=True)
     
     def __str__(self):
         return self.job_no

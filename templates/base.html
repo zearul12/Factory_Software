@@ -18,23 +18,16 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--main-bg); color: var(--main-text); display: flex; height: 100vh; overflow: hidden; transition: background 0.3s; }
 
-        /* --- Smart Sidebar (Mini Mode) --- */
+        /* --- Smart Sidebar --- */
         .sidebar { width: 280px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; transition: width 0.3s ease; overflow-x: hidden; overflow-y: auto; z-index: 100;}
         .sidebar.collapsed { width: 75px; } 
         .sidebar::-webkit-scrollbar { width: 5px; } .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 5px; }
-        
-        /* হাইড অবস্থায় লেখা ও অ্যারো গায়েব করার ম্যাজিক */
-        .sidebar.collapsed .brand-text, 
-        .sidebar.collapsed .nav-item-left span, 
-        .sidebar.collapsed .arrow { display: none; }
-        
-        /* হাইড অবস্থায় আইকনগুলোকে মাঝখানে আনার ম্যাজিক */
+        .sidebar.collapsed .brand-text, .sidebar.collapsed .nav-item-left span, .sidebar.collapsed .arrow { display: none; }
         .sidebar.collapsed .brand { padding: 18px 0; justify-content: center; }
         .sidebar.collapsed .nav-item { padding: 12px 0; justify-content: center; }
         .sidebar.collapsed .nav-item-left { justify-content: center; width: 100%; }
         .sidebar.collapsed .nav-item i.icon { width: auto; margin: 0; font-size: 20px;}
         
-        /* Premium Brand Font & Color */
         .brand { padding: 18px 15px; font-size: 19px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; display: flex; align-items: center; white-space: nowrap; overflow: hidden;}
         .brand-text { color: #00d2d3; font-weight: 800; font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 1px; text-transform: uppercase;}
         
@@ -49,7 +42,6 @@
         .submenu.show { max-height: 500px; }
         .submenu a { display: block; padding: 10px 20px 10px 60px; color: #bbb; text-decoration: none; font-size: 14px; transition: 0.2s; white-space: nowrap;}
         .submenu a:hover { color: #fff; background: rgba(255,255,255,0.05); border-left: 3px solid #00a8ff;}
-
         .spacer { flex-grow: 1; }
 
         /* Main Content */
@@ -62,10 +54,19 @@
         
         .user-info { display: flex; align-items: center; gap: 15px; }
         .logout-btn { background: #e74c3c; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
-
         .content-area { flex: 1; padding: 20px; overflow-y: auto;}
 
-        /* Dynamic Footer */
+        /* Notification Dropdown Design */
+        .notif-dropdown { position: absolute; top: 35px; right: -5px; width: 320px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: none; z-index: 999; text-align: left; cursor: default; }
+        .notif-dropdown.show { display: block; }
+        .notif-header { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 14px; font-weight: bold; color: var(--main-text); background: rgba(0,0,0,0.02);}
+        .notif-list { max-height: 350px; overflow-y: auto; }
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid var(--border-color); display: block; text-decoration: none; color: var(--main-text); transition: background 0.2s; }
+        .notif-item:hover { background: rgba(0, 123, 255, 0.05); }
+        .notif-title { font-size: 13px; font-weight: bold; margin-bottom: 3px; color: #007bff; }
+        .notif-msg { font-size: 12px; color: #7f8c8d; line-height: 1.4; }
+        .notif-time { font-size: 10px; color: #aaa; margin-top: 5px; text-align: right; }
+
         .app-footer { height: 40px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 13px; color: #7f8c8d; font-weight: 500;}
 
         /* Theme Panel */
@@ -82,14 +83,11 @@
         .toggle-switch::before { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s; }
         body.dark-mode .toggle-switch { background: var(--accent); }
         body.dark-mode .toggle-switch::before { left: 22px; }
-
     </style>
 </head>
 <body id="app-body">
-
     <!-- Sidebar -->
     <div class="sidebar" id="app-sidebar">
-        <!-- Colorful Brand Logo -->
         <div class="brand">
             <i class="fa-solid fa-industry" style="color: #ff9f43; min-width: 45px; text-align: center; font-size: 24px;"></i>
             <span class="brand-text">{{ factory_name|default:"Smart Factory" }}</span>
@@ -99,7 +97,6 @@
             <div class="nav-item-left"><i class="fa-solid fa-chart-line icon" style="color: #00a8ff;"></i> <span>Dashboard</span></div>
         </a>
 
-        <!-- 1. Marketing & Merchandising -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-bullhorn icon" style="color: #e84118;"></i> <span>Marketing & Mrc.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
@@ -108,7 +105,6 @@
             <a href="{% url 'confirm_order_entry' %}">Confirm Order Entry</a>
         </div>
 
-        <!-- 2. IE & Planning Dpt. -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-calendar-days icon" style="color: #9c88ff;"></i> <span>IE & Planning Dpt.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
@@ -118,17 +114,12 @@
             <a href="#">Master Plan</a>
         </div>
 
-        <!-- 3. Store Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-boxes-stacked icon" style="color: #fbc531;"></i> <span>Store Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">General Store</a>
-            <a href="#">Yarn Store</a>
-        </div>
+        <div class="submenu"><a href="#">General Store</a><a href="#">Yarn Store</a></div>
 
-        <!-- 4. HR-Admin & Accounts -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-users-gear icon" style="color: #4cd137;"></i> <span>HR-Admin & Accounts</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
@@ -140,56 +131,38 @@
             {% endif %}
         </div>
 
-        <!-- 5. Sample Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-shirt icon" style="color: #e67e22;"></i> <span>Sample Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">Development</a>
-        </div>
+        <div class="submenu"><a href="#">Development</a></div>
 
-        <!-- 6. Production Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-cogs icon" style="color: #00cec9;"></i> <span>Production Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">Knitting</a>
-            <a href="#">Linking</a>
-            <a href="#">Finishing</a>
-        </div>
+        <div class="submenu"><a href="#">Knitting</a><a href="#">Linking</a><a href="#">Finishing</a></div>
 
-        <!-- 7. Quality Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-check-double icon" style="color: #e84393;"></i> <span>Quality Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">QC Reports</a>
-        </div>
+        <div class="submenu"><a href="#">QC Reports</a></div>
 
-        <!-- 8. Maintenance Dpt. -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-screwdriver-wrench icon" style="color: #7f8c8d;"></i> <span>Maintenance Dpt.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">Machine Servicing</a>
-        </div>
+        <div class="submenu"><a href="#">Machine Servicing</a></div>
 
-        <!-- 9. Reports -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-chart-pie icon" style="color: #48dbfb;"></i> <span>Reports</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu">
-            <a href="#">Daily Summary</a>
-        </div>
+        <div class="submenu"><a href="#">Daily Summary</a></div>
         
         <div class="spacer"></div>
         
-        <!-- Bottom Settings -->
         {% if request.user.is_superuser %}
         <a href="{% url 'system_settings' %}" class="nav-item" style="border-top: 1px solid rgba(255,255,255,0.1);">
             <div class="nav-item-left"><i class="fa-solid fa-gears icon" style="color: #bdc3c7;"></i> <span>System Settings</span></div>
@@ -203,30 +176,38 @@
 
     <!-- Main Content -->
     <div class="main-wrapper">
-        <!-- Topbar with Hamburger Menu -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="toggle-sidebar-btn" onclick="toggleSidebar(event)"><i class="fa-solid fa-bars"></i></button>
                 <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
             </div>
             <div class="user-info">
-                <!-- নতুন নোটিফিকেশন বেল -->
-                <div style="position: relative; cursor: pointer; margin-right: 15px; font-size: 18px;" title="Notifications">
-                    <i class="fa-solid fa-bell"></i>
-                    <span id="notif-badge" style="position: absolute; top: -8px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none;">0</span>
-                </div>
+                
+                <!-- Notification Bell & Dropdown (Replace this section) -->
+<div style="position: relative; cursor: pointer; margin-right: 15px; font-size: 18px;" id="notifBtn" onclick="toggleNotifMenu(event)">
+    <i class="fa-solid fa-bell"></i>
+    <span id="notif-badge" style="position: absolute; top: -8px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none;">0</span>
+    
+    <div class="notif-dropdown" id="notifDropdown" style="width: 360px;">
+        <div class="notif-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-bell" style="color:#e74c3c;"></i> Notifications</span>
+            <button onclick="quickApproveAll(event)" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">Approve All</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+            <div style="padding:15px; text-align:center; font-size:12px; color:#aaa;">Loading...</div>
+        </div>
+    </div>
+</div>
 
                 <span><i class="fa-solid fa-circle-user"></i> Hello, {{ request.user.first_name|default:request.user.username }}</span>
                 <a href="{% url 'logout' %}" class="logout-btn"><i class="fa-solid fa-power-off"></i> Logout</a>
             </div>
         </div>
 
-        <!-- Dynamic Content Area -->
         <div class="content-area" id="main-content" onclick="autoHideSidebar()">
             {% block content %}{% endblock %}
         </div>
 
-        <!-- Dynamic Footer -->
         <div class="app-footer">
             <div style="flex:1; text-align:left;">App {{ app_version }}</div>
             <div style="flex:1; text-align:center;">{{ copyright_text }}</div>
@@ -252,23 +233,13 @@
     <!-- JavaScript -->
     <script>
         const sidebar = document.getElementById('app-sidebar');
-        
-        // --- Sidebar Hamburger Toggle ---
         function toggleSidebar(event) {
-            event.stopPropagation();
-            sidebar.classList.toggle('collapsed');
+            event.stopPropagation(); sidebar.classList.toggle('collapsed');
             if (sidebar.classList.contains('collapsed')) { closeAllSubmenus(); }
         }
-
-        // --- Body click to collapse into Mini Sidebar ---
         function autoHideSidebar() {
-            if (!sidebar.classList.contains('collapsed')) {
-                sidebar.classList.add('collapsed');
-                closeAllSubmenus(); // মিনি মোডে গেলে সব সাব-মেনু বন্ধ হয়ে যাবে
-            }
+            if (!sidebar.classList.contains('collapsed')) { sidebar.classList.add('collapsed'); closeAllSubmenus(); }
         }
-
-        // সাব-মেনু বন্ধ করার কমন ফাংশন
         function closeAllSubmenus() {
             document.querySelectorAll('.nav-item.active').forEach(item => {
                 item.classList.remove('active');
@@ -277,14 +248,8 @@
                 }
             });
         }
-
-        // --- Smart Submenu Logic ---
         function toggleSubmenu(element) {
-            // যদি আইকন মোডে থাকে, তবে ক্লিক করলে আগে সাইডবার বড় হবে
-            if (sidebar.classList.contains('collapsed')) {
-                sidebar.classList.remove('collapsed');
-            }
-
+            if (sidebar.classList.contains('collapsed')) { sidebar.classList.remove('collapsed'); }
             document.querySelectorAll('.nav-item.active').forEach(item => {
                 if (item !== element) { 
                     item.classList.remove('active'); 
@@ -293,15 +258,10 @@
                     }
                 }
             });
-            
             element.classList.toggle('active');
             let submenu = element.nextElementSibling;
-            if (submenu && submenu.classList.contains('submenu')) {
-                submenu.classList.toggle('show');
-            }
+            if (submenu && submenu.classList.contains('submenu')) { submenu.classList.toggle('show'); }
         }
-
-        // --- Theme Engine Logic ---
         function toggleThemePanel() { document.getElementById('themePanel').classList.toggle('open'); }
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
@@ -318,7 +278,6 @@
             root.style.setProperty('--sidebar-bg', backgroundData);
             localStorage.setItem('sidebar-bg', backgroundData);
         }
-
         function generateButtons(array, containerId) {
             const container = document.getElementById(containerId);
             array.forEach(bg => {
@@ -326,10 +285,183 @@
                 btn.onclick = () => applyTheme(bg); container.appendChild(btn);
             });
         }
-
         generateButtons(solidColors, 'solid-colors'); generateButtons(gradientColors, 'gradient-colors'); generateButtons(patternColors, 'pattern-colors');
         const savedBg = localStorage.getItem('sidebar-bg');
         if (savedBg) { root.style.setProperty('--sidebar-bg', savedBg); }
+
+        // --- Notification Engine ---
+        function fetchNotifications() {
+            fetch("/ajax/notifications/")
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    let badge = document.getElementById('notif-badge');
+                    let list = document.getElementById('notif-list');
+                    if (data.count > 0) {
+                        badge.innerText = data.count; badge.style.display = 'block';
+                        list.innerHTML = '';
+                        data.notifs.forEach(n => {
+                            // Quick Approve Button Logic
+                            let btnHtml = n.job_no ? `<button onclick="quickApprove('${n.job_no}', event)" style="margin-top:5px; background:#007bff; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:3px; cursor:pointer;">Quick Approve</button>` : '';
+                            
+                            list.innerHTML += `
+                                <div class="notif-item" style="display:block; text-decoration:none; color:inherit; border-bottom:1px solid #eee;">
+                                    <a href="${n.link}" style="text-decoration:none; color:inherit; display:block;">
+                                        <div class="notif-title">${n.title}</div>
+                                        <div class="notif-msg">${n.message}</div>
+                                    </a>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        ${btnHtml}
+                                        <div class="notif-time">${n.time}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        badge.style.display = 'none';
+                        list.innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:13px;">No new notifications.</div>';
+                    }
+                }
+            });
+        }
+        
+        function quickApprove(jobNo, event) {
+            event.stopPropagation();
+            fetch('/marketing/ajax/order-action/', {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
+                body: JSON.stringify({action: 'approve', job_no: jobNo})
+            }).then(res=>res.json()).then(data => {
+                if(data.status === 'success') { alert(data.msg); fetchNotifications(); }
+            });
+        }
+
+        function quickApproveAll(event) {
+            event.stopPropagation();
+            fetch('/marketing/ajax/order-action/', {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
+                body: JSON.stringify({action: 'approve_all'})
+            }).then(res=>res.json()).then(data => {
+                if(data.status === 'success') { alert(data.msg); fetchNotifications(); }
+            });
+        }
+        
+        function toggleNotifMenu(e) {
+            e.stopPropagation(); document.getElementById('notifDropdown').classList.toggle('show');
+        }
+        
+        document.addEventListener('click', function(e) {
+            let menu = document.getElementById('notifDropdown');
+            if (menu && menu.classList.contains('show') && !e.target.closest('#notifBtn')) { menu.classList.remove('show'); }
+        });
+
+        window.addEventListener('load', fetchNotifications);
     </script>
+
+<!-- Global Custom Modal -->
+    <style>
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
+        .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+        .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
+        .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+        .modal-icon { font-size: 40px; margin-bottom: 15px; }
+        .modal-text { font-size: 15px; color: var(--main-text); margin-bottom: 25px; font-weight: 500;}
+        .btn-confirm { padding: 8px 25px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
+    </style>
+
+    <div id="global-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div class="modal-icon" id="global-modal-icon"></div>
+            <div class="modal-text" id="global-modal-text">Message</div>
+            <button class="btn-confirm" onclick="closeGlobalModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Modal Engine ---
+        function showModal(msg, type="error") {
+            document.getElementById('global-modal-text').innerText = msg;
+            let icon = document.getElementById('global-modal-icon');
+            if(type === 'error') icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #e74c3c;"></i>';
+            else icon.innerHTML = '<i class="fa-solid fa-check-circle" style="color: #27ae60;"></i>';
+            document.getElementById('global-modal').classList.add('show');
+        }
+        function closeGlobalModal() { document.getElementById('global-modal').classList.remove('show'); }
+        
+        // Enter / Esc Key support for global modal
+        document.addEventListener('keydown', function(e) {
+            let modal = document.getElementById('global-modal');
+            if(modal && modal.classList.contains('show')) {
+                if(e.key === 'Enter' || e.key === 'Escape') { 
+                    e.preventDefault(); e.stopPropagation(); 
+                    closeGlobalModal(); 
+                }
+            }
+        }, true); // Use capture phase to stop other enter actions
+
+        // --- Notification Engine ---
+        function fetchNotifications() {
+            fetch("/ajax/notifications/")
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    let badge = document.getElementById('notif-badge');
+                    let list = document.getElementById('notif-list');
+                    if (data.count > 0) {
+                        badge.innerText = data.count; badge.style.display = 'block';
+                        list.innerHTML = '';
+                        data.notifs.forEach(n => {
+                            let btnHtml = n.job_no ? `<button onclick="quickApprove('${n.job_no}', event)" style="margin-top:5px; background:#007bff; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:3px; cursor:pointer;">Quick Approve</button>` : '';
+                            list.innerHTML += `
+                                <div class="notif-item" style="display:block; text-decoration:none; color:inherit; border-bottom:1px solid #eee;">
+                                    <a href="${n.link}" style="text-decoration:none; color:inherit; display:block;">
+                                        <div class="notif-title">${n.title}</div>
+                                        <div class="notif-msg">${n.message}</div>
+                                    </a>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        ${btnHtml}
+                                        <div class="notif-time">${n.time}</div>
+                                    </div>
+                                </div>`;
+                        });
+                    } else {
+                        badge.style.display = 'none';
+                        list.innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:13px;">No new notifications.</div>';
+                    }
+                }
+            });
+        }
+        
+        // Quick Approve using beautiful Modal
+        function quickApprove(jobNo, event) {
+            event.stopPropagation();
+            fetch('/marketing/ajax/order-action/', {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
+                body: JSON.stringify({action: 'approve', job_no: jobNo})
+            }).then(res=>res.json()).then(data => {
+                if(data.status === 'success') { showModal(data.msg, "success"); fetchNotifications(); }
+            });
+        }
+
+        function quickApproveAll(event) {
+            event.stopPropagation();
+            fetch('/marketing/ajax/order-action/', {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
+                body: JSON.stringify({action: 'approve_all'})
+            }).then(res=>res.json()).then(data => {
+                if(data.status === 'success') { showModal(data.msg, "success"); fetchNotifications(); }
+            });
+        }
+        
+        function toggleNotifMenu(e) {
+            e.stopPropagation(); document.getElementById('notifDropdown').classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            let menu = document.getElementById('notifDropdown');
+            if (menu && menu.classList.contains('show') && !e.target.closest('#notifBtn')) { menu.classList.remove('show'); }
+        });
+
+        window.addEventListener('load', fetchNotifications);
+    </script>
+</body>
 </body>
 </html>
