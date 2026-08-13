@@ -1,0 +1,563 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Order Entry - {{ factory_name }}{% endblock %}
+{% block page_title %}Confirm Order Entry{% endblock %}
+
+{% block content %}
+<style>
+    .entry-card { background: var(--card-bg); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
+    .section-title { font-size: 16px; font-weight: bold; color: var(--main-text); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+    
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-items: start;}
+    
+    /* Updated Colorful Labels (Bigger & Bolder) */
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #2c3e50; font-size: 14px;}
+    body.dark-mode .form-group label { color: #ecf0f1; }
+    .form-group label i { margin-right: 6px; font-size: 15px; }
+    
+    .form-control { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); transition: 0.2s;}
+    .form-control:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.2); outline: none;}
+    
+    /* Job No Combined Input */
+    .job-group { display: flex; align-items: stretch; height: 35px; }
+    .job-prefix { background: rgba(0,0,0,0.05); border: 1px solid var(--border-color); padding: 0 8px; font-size: 13px; font-weight: bold; color: #7f8c8d; display: flex; align-items: center;}
+    .job-input { border: 1px solid var(--border-color); font-weight: bold; color: #007bff; background: var(--main-bg); text-align: center; outline: none; transition: 0.2s; font-size: 14px;}
+    .job-input:focus { border-color: #007bff; }
+    
+    /* Autocomplete List */
+    .autocomplete-wrapper { position: relative; }
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: var(--card-bg); border: 1px solid #007bff; max-height: 150px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+    .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color);}
+    .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
+
+    /* Tags Input styling */
+    .tags-input-container { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--main-bg); min-height: 35px;}
+    .tag { background: #007bff; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; display: flex; align-items: center; gap: 5px; font-weight: 500;}
+    .tag i { cursor: pointer; }
+    .tag-input { border: none; outline: none; background: transparent; flex: 1; min-width: 80px; font-size: 13px; color: var(--main-text);}
+
+    /* Process Pills */
+    .process-pill { display: inline-block; padding: 4px 10px; background: rgba(0,123,255,0.1); color: #007bff; border-radius: 15px; font-size: 11.5px; cursor: pointer; margin: 2px; border: 1px solid rgba(0,123,255,0.2); transition: 0.2s; font-weight: 500;}
+    .process-pill:hover { background: #007bff; color: white; }
+
+    /* Action Buttons */
+    .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;}
+    .btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; display: flex; align-items: center; gap: 5px;}
+    .btn-primary { background: #27ae60; color: white; }
+    .btn-info { background: #00a8ff; color: white; }
+    .btn-danger { background: #e74c3c; color: white; display: none; }
+    .btn-cancel { background: #95a5a6; color: white; }
+
+    /* Matrix Table */
+    .matrix-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12.5px; }
+    .matrix-table th, .matrix-table td { border: 1px solid var(--border-color); padding: 6px; text-align: center; }
+    .matrix-table th { background: rgba(0,0,0,0.03); color: var(--main-text); font-weight: bold;}
+    .matrix-input { width: 100%; border: 1px solid var(--border-color); border-radius: 3px; text-align: center; font-size: 12.5px; padding: 5px; background: var(--main-bg); color: var(--main-text); font-weight: bold; transition: 0.2s;}
+    .matrix-input:focus { border-color: #007bff; background: var(--card-bg); outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+    
+    .btn-circle { width: 22px; height: 22px; border-radius: 50%; border: none; color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
+    .btn-plus { background: #27ae60; } .btn-minus { background: #e74c3c; }
+
+    /* ---------------- NEW: Beautiful Summary Dashboard ---------------- */
+    .summary-wrapper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+    .sum-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-top: 4px solid #ccc; transition: transform 0.2s;}
+    .sum-card:hover { transform: translateY(-3px); }
+    
+    .sum-card.po-card { border-top-color: #3498db; background: rgba(52, 152, 219, 0.03); }
+    .sum-card.color-card { border-top-color: #9b59b6; background: rgba(155, 89, 182, 0.03); }
+    .sum-card.total-card { border-top-color: #27ae60; background: rgba(39, 174, 96, 0.03); }
+    
+    .sum-title { font-weight: bold; font-size: 14.5px; margin-bottom: 12px; color: var(--main-text); border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 8px;}
+    
+    /* Qty Row Design */
+    .sum-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px dashed rgba(0,0,0,0.05); font-size: 13.5px;}
+    .sum-row b { width: 130px; color: var(--main-text); font-weight: 700; }
+    .sum-row span { font-weight: 600; color: #555; background: rgba(0,0,0,0.04); padding: 2px 8px; border-radius: 12px; font-size: 12px;}
+    
+    body.dark-mode .sum-row span { color: #ddd; background: rgba(255,255,255,0.1); }
+    
+    .match-error { color: #e74c3c !important; } .match-success { color: #27ae60 !important; }
+
+    /* Custom Modal CSS */
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
+    .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+    .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
+    .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+    .modal-icon { font-size: 40px; margin-bottom: 15px; }
+    .modal-text { font-size: 15px; color: var(--main-text); margin-bottom: 25px; font-weight: 500;}
+    .btn-confirm { padding: 8px 25px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
+</style>
+
+<div class="entry-card">
+    <div class="section-title">
+        <span><i class="fa-solid fa-file-invoice" style="color: #007bff;"></i> General Information</span>
+        
+        <div class="autocomplete-wrapper" style="width: 250px;">
+            <input type="text" id="job_search" class="form-control" placeholder="Search past Job (e.g. 001)...">
+            <div id="job_search_list" class="autocomplete-list"></div>
+        </div>
+    </div>
+
+    <form id="orderForm" autocomplete="off">
+        <input type="hidden" id="order_master_id">
+        <div class="grid-4">
+            <!-- Row 1 -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-hashtag" style="color: #e74c3c;"></i> Job No. <span style="color:red">*</span></label>
+                <div class="job-group">
+                    <span class="job-prefix" style="border-radius: 4px 0 0 4px; border-right: none;">{{ job_prefix }}-</span>
+                    <input type="text" id="job_year" class="job-input required-field" value="{{ current_year }}" maxlength="2" style="width: 40px;">
+                    <span class="job-prefix" style="border-left: none; border-right: none; padding: 0 4px;">-</span>
+                    <input type="text" id="job_sequence" class="job-input required-field" value="{{ new_job_no|slice:'-5:' }}" maxlength="5" style="border-radius: 0 4px 4px 0; flex: 1;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-building" style="color: #f39c12;"></i> Department <span style="color:red">*</span></label>
+                <select id="department" class="form-control required-field" onfocus="try{this.showPicker()}catch(e){}">
+                    <option value="">-- Select --</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group autocomplete-wrapper">
+                <label><i class="fa-solid fa-user-tie" style="color: #27ae60;"></i> Buyer Name <span style="color:red">*</span></label>
+                <input type="text" id="buyer_name" class="form-control required-field" placeholder="Type to search..." oninput="searchBuyer(this.value)">
+                <input type="hidden" id="buyer_id" class="required-field">
+                <div id="buyer_list" class="autocomplete-list"></div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-shirt" style="color: #9b59b6;"></i> Style No. <span style="color:red">*</span></label>
+                <input type="text" id="style_no" class="form-control required-field">
+            </div>
+
+            <!-- Row 2 -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-cogs" style="color: #34495e;"></i> Development M/C <span style="color:red">*</span></label>
+                <select id="dev_mc" class="form-control required-field" onfocus="try{this.showPicker()}catch(e){}">
+                    <option value="">-- Select M/C --</option>
+                    {% for mc in machines %}
+                        <option value="{{ mc }}">{{ mc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-pen-clip" style="color: #16a085;"></i> Style Description <span style="color:red">*</span></label>
+                <input type="text" id="style_desc" class="form-control required-field">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-barcode" style="color: #d35400;"></i> PO Number(s) <span style="color:red">*</span></label>
+                <div class="tags-input-container" onclick="document.getElementById('po_input').focus()">
+                    <div id="po_tags_area" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                    <input type="text" id="po_input" class="tag-input" placeholder="Type & Enter..." onkeydown="handleTagInput(event, 'po')">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-palette" style="color: #8e44ad;"></i> Color(s) <span style="color:red">*</span></label>
+                <div class="tags-input-container" onclick="document.getElementById('color_input').focus()">
+                    <div id="color_tags_area" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                    <input type="text" id="color_input" class="tag-input" placeholder="Type & Enter..." onkeydown="handleTagInput(event, 'color')">
+                </div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-cubes" style="color: #2ecc71;"></i> Total Order Qty <span style="color:red">*</span></label>
+                <input type="text" id="order_qty" class="form-control required-field" style="font-weight: bold; font-size: 16px; color:#27ae60;" oninput="this.value=this.value.replace(/[^0-9]/g,''); validateMatrixTotal();">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-calendar-check" style="color: #e67e22;"></i> Agreed Shipment Date <span style="color:red">*</span></label>
+                <input type="date" id="shipment_date" class="form-control required-field" onclick="this.showPicker()" onfocus="this.showPicker()">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-folder-open" style="color: #f1c40f;"></i> File Handover Date <span style="color:red">*</span></label>
+                <input type="date" id="file_handover_date" class="form-control required-field" onclick="this.showPicker()" onfocus="this.showPicker()">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-dollar-sign" style="color: #27ae60;"></i> Avg. FOB Price ($) <span style="color:red">*</span></label>
+                <input type="number" step="0.01" id="avg_fob" class="form-control required-field">
+            </div>
+
+            <!-- Row 4 (Fixed Layout) -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-tags" style="color: #e74c3c;"></i> Discounted FOB Price ($) <span style="color:red">*</span></label>
+                <input type="number" step="0.01" id="discount_fob" class="form-control required-field">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-layer-group" style="color: #0984e3;"></i> Additional Process <span style="color:red">*</span></label>
+                <input type="text" id="additional_process" class="form-control required-field" placeholder="Click tags below...">
+                <div style="margin-top: 5px;">
+                    {% for p in processes %}
+                        <span class="process-pill" onclick="appendProcess('{{ p }}')">{{ p }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Remarks perfectly aligned under Handover Date -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-comment-dots" style="color: #7f8c8d;"></i> Remarks (Optional)</label>
+                <input type="text" id="remarks" class="form-control">
+            </div>
+            
+            <!-- Empty grid cell to keep the 4-column structure perfect -->
+            <div></div> 
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Matrix Section -->
+<div class="entry-card">
+    <div class="section-title">
+        <span><i class="fa-solid fa-table-cells-large" style="color: #007bff;"></i> Size Wise Qty Matrix</span>
+        <div style="display: flex; gap: 10px;">
+            <select id="matrix_po" class="form-control" style="width: 120px;" onfocus="try{this.showPicker()}catch(e){}"><option value="">Select PO</option></select>
+            <select id="matrix_color" class="form-control" style="width: 120px;" onfocus="try{this.showPicker()}catch(e){}"><option value="">Select Color</option></select>
+            <select id="matrix_template" class="form-control" style="width: 150px;" onfocus="try{this.showPicker()}catch(e){}">
+                <option value="">Select Template</option>
+                <option value="empty">-- Empty Blank --</option>
+            </select>
+            <button type="button" class="btn btn-info" onclick="generateMatrixRows()"><i class="fa-solid fa-bolt"></i> Generate</button>
+        </div>
+    </div>
+
+    <table class="matrix-table" id="matrixTable">
+        <thead>
+            <tr>
+                <th style="width: 20%;">PO Number</th>
+                <th style="width: 20%;">Color Name</th>
+                <th style="width: 25%;">Size Name (Editable)</th>
+                <th style="width: 20%;">Quantity <span style="color:red">*</span></th>
+                <th style="width: 15%;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="matrix_body">
+            <!-- Rows generated dynamically -->
+        </tbody>
+    </table>
+
+    <!-- Beautiful Separated Summary Cards -->
+    <div class="summary-wrapper">
+        <div class="sum-card po-card">
+            <div class="sum-title"><i class="fa-solid fa-barcode" style="color:#3498db;"></i> PO Wise Total</div>
+            <div id="po_wise_summary"><i style="color:#999; font-size:12.5px;">No PO added yet.</i></div>
+        </div>
+        
+        <div class="sum-card color-card">
+            <div class="sum-title"><i class="fa-solid fa-palette" style="color:#9b59b6;"></i> Color Wise Total</div>
+            <div id="color_wise_summary"><i style="color:#999; font-size:12.5px;">No Color added yet.</i></div>
+        </div>
+        
+        <div class="sum-card total-card">
+            <div class="sum-title"><i class="fa-solid fa-cubes" style="color:#27ae60;"></i> Matrix Grand Total</div>
+            <div style="font-size: 28px; font-weight: 900; color: #27ae60; margin-top: 15px;" id="sum_matrix_qty">0 <span style="font-size: 14px; color:#7f8c8d;">Pcs</span></div>
+            <div id="match_status" style="font-size: 13px; font-weight: bold; margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="btn-group" style="border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <button type="button" class="btn btn-cancel" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> Clear All</button>
+        <button type="button" class="btn btn-danger" id="btnDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+        <button type="button" class="btn btn-info" id="btnHold"><i class="fa-solid fa-pause"></i> Hold</button>
+        <button type="button" class="btn btn-primary" id="btnSave" onclick="saveMasterOrder()"><i class="fa-solid fa-paper-plane"></i> Save & Submit</button>
+    </div>
+</div>
+
+<!-- Custom Modal -->
+<div id="custom-modal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+        <div class="modal-icon" id="modal-icon"><i class="fa-solid fa-triangle-exclamation" style="color: #e74c3c;"></i></div>
+        <div class="modal-text" id="modal-text">Error message goes here</div>
+        <button class="btn-confirm" onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const sizeTemplates = JSON.parse('{{ size_templates_json|safe }}');
+    let poList = [];
+    let colorList = [];
+
+    window.onload = function() {
+        let tempSelect = document.getElementById('matrix_template');
+        for (let key in sizeTemplates) {
+            let opt = document.createElement('option');
+            opt.value = key; opt.innerText = key + ` (${sizeTemplates[key][0]} - ${sizeTemplates[key][sizeTemplates[key].length-1]})`;
+            tempSelect.appendChild(opt);
+        }
+    };
+
+    // --- Custom Modal Logic ---
+    function showModal(msg, type="error") {
+        document.getElementById('modal-text').innerText = msg;
+        let icon = document.getElementById('modal-icon');
+        if(type === 'error') icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #e74c3c;"></i>';
+        else icon.innerHTML = '<i class="fa-solid fa-check-circle" style="color: #27ae60;"></i>';
+        
+        document.getElementById('custom-modal').classList.add('show');
+    }
+    
+    function closeModal() { document.getElementById('custom-modal').classList.remove('show'); }
+    
+    document.addEventListener('keydown', function(e) {
+        if(document.getElementById('custom-modal').classList.contains('show')) {
+            if(e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeModal(); }
+        }
+    });
+
+    // --- Keyboard Navigation (Enter jump) ---
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !document.getElementById('custom-modal').classList.contains('show')) {
+            
+            // Qty Field Jump Logic
+            if (e.target.classList.contains('row-qty')) {
+                e.preventDefault();
+                let qtys = Array.from(document.querySelectorAll('.row-qty'));
+                let idx = qtys.indexOf(e.target);
+                if (idx > -1 && idx < qtys.length - 1) {
+                    qtys[idx + 1].focus();
+                } else {
+                    document.getElementById('btnSave').focus(); 
+                }
+                return;
+            }
+
+            if (e.target.classList.contains('tag-input') || e.target.id === 'buyer_name' || e.target.id === 'job_search') return;
+            
+            e.preventDefault();
+            let focusable = Array.from(document.querySelectorAll('input:not([readonly]):not([type="hidden"]), select, button'));
+            let index = focusable.indexOf(e.target);
+            if (index > -1 && index < focusable.length - 1) {
+                let nextEl = focusable[index + 1];
+                nextEl.focus();
+                if (nextEl.tagName === 'INPUT') nextEl.select();
+            }
+        }
+    });
+
+    // --- Buyer AJAX Autocomplete ---
+    let buyerFocus = -1;
+    function searchBuyer(query) {
+        let list = document.getElementById('buyer_list');
+        if (!query) { list.style.display = 'none'; return; }
+        
+        fetch(`{% url 'search_buyer_ajax' %}?q=${query}`)
+        .then(res => res.json()).then(data => {
+            list.innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(b => {
+                    let div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = b.name;
+                    div.onclick = function() { selectBuyer(b.id, b.name); };
+                    list.appendChild(div);
+                });
+                list.style.display = 'block'; buyerFocus = -1;
+            } else { list.style.display = 'none'; }
+        });
+    }
+
+    function selectBuyer(id, name) {
+        document.getElementById('buyer_id').value = id;
+        document.getElementById('buyer_name').value = name;
+        document.getElementById('buyer_list').style.display = 'none';
+        document.getElementById('style_no').focus();
+    }
+
+    document.getElementById('buyer_name').addEventListener('keydown', function(e) {
+        let list = document.getElementById('buyer_list');
+        if (list.style.display !== 'block') return;
+        let items = list.getElementsByTagName('div');
+        if (e.key === 'ArrowDown') { e.preventDefault(); buyerFocus++; addActive(items); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); buyerFocus--; addActive(items); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (buyerFocus > -1) items[buyerFocus].click(); }
+    });
+
+    function addActive(items) {
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) items[i].classList.remove('active');
+        if (buyerFocus >= items.length) buyerFocus = 0;
+        if (buyerFocus < 0) buyerFocus = items.length - 1;
+        items[buyerFocus].classList.add('active');
+    }
+
+    document.addEventListener("click", function (e) { if (e.target.id !== "buyer_name") document.getElementById("buyer_list").style.display = "none"; });
+
+    // --- Tags Input Logic ---
+    function handleTagInput(e, type) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            let val = e.target.value.trim().replace(',', '');
+            if (val) {
+                if (type === 'po' && !poList.includes(val)) { poList.push(val); renderTags('po'); updateMatrixDropdowns(); }
+                else if (type === 'color' && !colorList.includes(val)) { colorList.push(val); renderTags('color'); updateMatrixDropdowns(); }
+                e.target.value = '';
+            } else if (e.key === 'Enter') {
+                let focusable = Array.from(document.querySelectorAll('input:not([type="hidden"]), select'));
+                focusable[focusable.indexOf(e.target) + 1].focus();
+            }
+        }
+    }
+
+    function renderTags(type) {
+        let area = document.getElementById(type + '_tags_area');
+        let list = type === 'po' ? poList : colorList;
+        area.innerHTML = '';
+        list.forEach((item, index) => {
+            area.innerHTML += `<span class="tag">${item} <i class="fa-solid fa-xmark" onclick="removeTag('${type}', ${index})"></i></span>`;
+        });
+    }
+
+    function removeTag(type, index) {
+        if (type === 'po') poList.splice(index, 1); else colorList.splice(index, 1);
+        renderTags(type); updateMatrixDropdowns();
+    }
+
+    function updateMatrixDropdowns() {
+        let poSel = document.getElementById('matrix_po'); let colorSel = document.getElementById('matrix_color');
+        poSel.innerHTML = '<option value="">Select PO</option>'; colorSel.innerHTML = '<option value="">Select Color</option>';
+        poList.forEach(po => poSel.innerHTML += `<option value="${po}">${po}</option>`);
+        colorList.forEach(c => colorSel.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+
+    function appendProcess(val) {
+        let input = document.getElementById('additional_process');
+        if (input.value) { if(!input.value.includes(val)) input.value += ', ' + val; } 
+        else input.value = val;
+    }
+
+    // --- Matrix Generation & Summary Logic ---
+    function generateMatrixRows() {
+        let po = document.getElementById('matrix_po').value;
+        let color = document.getElementById('matrix_color').value;
+        let tmp = document.getElementById('matrix_template').value;
+        
+        if (!po || !color || !tmp) { showModal("Please select PO, Color & Template first!"); return; }
+        
+        let existingRows = document.querySelectorAll('#matrix_body tr');
+        let isDuplicate = false;
+        existingRows.forEach(row => {
+            if(row.querySelector('.row-po').value === po && row.querySelector('.row-color').value === color) {
+                isDuplicate = true;
+            }
+        });
+        
+        if (isDuplicate) { showModal(`Matrix for PO "${po}" and Color "${color}" is already generated!`); return; }
+        
+        let sizes = tmp === 'empty' ? [''] : sizeTemplates[tmp];
+        sizes.forEach(sz => addMatrixRow(po, color, sz));
+        validateMatrixTotal();
+    }
+
+    function addMatrixRow(po, color, sizeName, btnRef = null) {
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="matrix-input row-po" value="${po}" readonly style="background:transparent; border:none; color:var(--main-text);"></td>
+            <td><input type="text" class="matrix-input row-color" value="${color}" readonly style="background:transparent; border:none; color:var(--main-text);"></td>
+            <td><input type="text" class="matrix-input row-size required-field" value="${sizeName}" placeholder="Size name..."></td>
+            <td><input type="text" class="matrix-input row-qty" value="" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); validateMatrixTotal();"></td>
+            <td>
+                <button type="button" class="btn-circle btn-plus" onclick="addMatrixRow('${po}', '${color}', '', this)"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" class="btn-circle btn-minus" onclick="this.closest('tr').remove(); validateMatrixTotal();"><i class="fa-solid fa-minus"></i></button>
+            </td>
+        `;
+        
+        if (btnRef) {
+            btnRef.closest('tr').after(tr); 
+            tr.querySelector('.row-size').focus(); 
+        } 
+        else document.getElementById('matrix_body').appendChild(tr);
+    }
+
+    function validateMatrixTotal() {
+        let totalMatrix = 0;
+        let poTotals = {}; let colorTotals = {};
+
+        document.querySelectorAll('#matrix_body tr').forEach(row => {
+            let po = row.querySelector('.row-po').value;
+            let color = row.querySelector('.row-color').value;
+            let qty = parseInt(row.querySelector('.row-qty').value || 0);
+
+            totalMatrix += qty;
+            poTotals[po] = (poTotals[po] || 0) + qty;
+            colorTotals[color] = (colorTotals[color] || 0) + qty;
+        });
+
+        document.getElementById('sum_matrix_qty').innerHTML = `${totalMatrix} <span style="font-size: 15px; color:#7f8c8d;">Pcs</span>`;
+
+        // Generate PO Summary (Updated Design)
+        let poHtml = '';
+        if(Object.keys(poTotals).length > 0) {
+            for(let p in poTotals) poHtml += `<div class="sum-row"><b>${p}</b> <span>${poTotals[p]} Pcs</span></div>`;
+        } else { poHtml = '<i style="color:#999; font-size:12.5px;">No PO added yet.</i>'; }
+        document.getElementById('po_wise_summary').innerHTML = poHtml;
+
+        // Generate Color Summary (Updated Design)
+        let colHtml = '';
+        if(Object.keys(colorTotals).length > 0) {
+            for(let c in colorTotals) colHtml += `<div class="sum-row"><b>${c}</b> <span>${colorTotals[c]} Pcs</span></div>`;
+        } else { colHtml = '<i style="color:#999; font-size:12.5px;">No Color added yet.</i>'; }
+        document.getElementById('color_wise_summary').innerHTML = colHtml;
+
+        // Order Qty matching
+        let orderQty = parseInt(document.getElementById('order_qty').value || 0);
+        let statusDiv = document.getElementById('match_status');
+        if (totalMatrix === orderQty && orderQty > 0) {
+            statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Matrix Matches Order Qty!';
+            statusDiv.className = 'match-success';
+        } else {
+            let diff = orderQty - totalMatrix;
+            statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Difference: ${diff} Pcs`;
+            statusDiv.className = 'match-error';
+        }
+    }
+
+    // --- Strict Validation before Save ---
+    function saveMasterOrder() {
+        let reqFields = document.querySelectorAll('.required-field');
+        for(let i=0; i<reqFields.length; i++) {
+            if(!reqFields[i].value.trim()) {
+                reqFields[i].focus();
+                showModal(`Please fill out all mandatory fields (marked with *).`);
+                return;
+            }
+        }
+        
+        if(poList.length === 0) { showModal("You must add at least one PO Number."); return; }
+        if(colorList.length === 0) { showModal("You must add at least one Color."); return; }
+        
+        let matrixRows = document.querySelectorAll('#matrix_body tr');
+        if(matrixRows.length === 0) { showModal("You must generate the Size Matrix."); return; }
+        
+        let qtyFields = document.querySelectorAll('.row-qty');
+        for(let i=0; i<qtyFields.length; i++) {
+            if(qtyFields[i].value === "" || parseInt(qtyFields[i].value) === 0) {
+                qtyFields[i].focus();
+                showModal("All generated matrix sizes must have a valid quantity.");
+                return;
+            }
+        }
+
+        let orderQty = parseInt(document.getElementById('order_qty').value || 0);
+        let matrixQty = 0;
+        qtyFields.forEach(f => matrixQty += parseInt(f.value || 0));
+        
+        if (orderQty !== matrixQty) {
+            showModal("Order Quantity and Matrix Total must match exactly before saving!");
+            return;
+        }
+
+        showModal("All Validations Passed! Ready to send to Database.", "success");
+    }
+</script>
+{% endblock %}

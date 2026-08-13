@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import AppSetting, Buyer
+from .models import AppSetting, Buyer, OrderMaster, KnitMachine
 from django.db.models import Case, When, Value, IntegerField
 
 
@@ -218,3 +218,64 @@ def update_knit_machine_ajax(request):
                 return JsonResponse({'status': 'success'})
             except ProtectedError:
                 return JsonResponse({'status': 'error', 'msg': 'Cannot delete! Machine is in use.'})
+
+import datetime
+
+@login_required(login_url='login')
+def confirm_order_entry_view(request):
+    # ১. Job Prefix এবং Year বের করা
+    prefix_obj = AppSetting.objects.filter(key='job_prefix').first()
+    job_prefix = prefix_obj.value.strip() if prefix_obj else 'PSL'
+    current_year = datetime.date.today().strftime('%y')
+    prefix_year = f"{job_prefix}-{current_year}-"
+    
+    # ২. Auto Generate Next Job Sequence (ডাটাবেজ চেক করে নতুন সিরিয়াল বের করা)
+    last_order = OrderMaster.objects.filter(job_no__startswith=prefix_year).order_by('-job_no').first()
+    if last_order:
+        try:
+            last_seq = int(last_order.job_no.split('-')[-1])
+            new_seq = last_seq + 1
+        except:
+            new_seq = 1
+    else:
+        new_seq = 1
+    new_job_no = f"{prefix_year}{new_seq:05d}"
+    
+    # ৩. Settings থেকে ড্রপডাউনের ডাটা আনা
+    dept_obj = AppSetting.objects.filter(key='departments').first()
+    departments = [d.strip() for d in dept_obj.value.split(',')] if dept_obj else []
+    
+    proc_obj = AppSetting.objects.filter(key='additional_processes').first()
+    processes = [p.strip() for p in proc_obj.value.split(',')] if proc_obj else []
+    
+    mc_obj = AppSetting.objects.filter(key='machine_brands').first()
+    machines = [m.strip() for m in mc_obj.value.split(',')] if mc_obj else []
+    
+    # ৪. Size Templates গুলো আনা (JSON হিসেবে পাঠানোর জন্য)
+    size_settings = AppSetting.objects.filter(key__istartswith='Size_temp_')
+    size_templates = {}
+    for s in size_settings:
+        size_templates[s.key] = [sz.strip() for sz in s.value.split(',')]
+        
+    context = {
+        'new_job_no': new_job_no,
+        'job_prefix': job_prefix,
+        'current_year': current_year,
+        'departments': departments,
+        'processes': processes,
+        'machines': machines,
+        'size_templates_json': json.dumps(size_templates)
+    }
+    return render(request, 'confirm_order_entry.html', context)
+
+
+# বায়ার সার্চ করার লাইভ AJAX ফাংশন (১ টা অক্ষর লিখলেই সাজেস্ট করবে)
+@login_required(login_url='login')
+def search_buyer_ajax(request):
+    query = request.GET.get('q', '')
+    if query:
+        buyers = Buyer.objects.filter(buyer_name__icontains=query)[:10]
+        results = [{'id': b.id, 'name': b.buyer_name} for b in buyers]
+    else:
+        results = []
+    return JsonResponse(results, safe=False)

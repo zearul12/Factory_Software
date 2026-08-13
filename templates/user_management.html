@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-    /* শুধু এই পেজের জন্য প্রয়োজনীয় স্টাইল */
     .card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
     .card-title { color: var(--main-text); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; font-size: 18px;}
     
@@ -55,6 +54,17 @@
             <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
             <div class="form-group"><label>Designation</label><input type="text" name="designation"></div>
             <div class="form-group"><label>Department</label><input type="text" name="department"></div>
+            
+            <div class="form-group">
+                <label>Approver For (Pages)</label>
+                <select name="approver_pages" multiple style="height: 35px;">
+                    <option value="Confirm Order Entry">Confirm Order Entry</option>
+                    <option value="Buyer Entry">Buyer Entry</option>
+                    <option value="Knit Machine Entry">Knit Machine Entry</option>
+                </select>
+                <small style="color: #7f8c8d; font-size: 11px;">* Hold 'Ctrl' to select multiple</small>
+            </div>
+            
             <div class="form-group">
                 <button type="submit" class="btn-submit">Create User</button>
             </div>
@@ -70,6 +80,10 @@
             <thead>
                 <tr>
                     <th>Company</th><th>Emp ID</th><th>Name</th><th>Login ID</th><th>Password</th><th>Designation</th><th>Dept.</th><th>Status</th>
+                    
+                    <!-- New Column for Approver -->
+                    <th style="background:rgba(0,0,0,0.05); border-left:1px solid var(--border-color);">Approver For</th>
+                    
                     {% for page in pages %}
                         <th style="background:rgba(0,0,0,0.05); border-left:1px solid var(--border-color);">{{ page }}</th>
                     {% endfor %}
@@ -96,6 +110,24 @@
                     <td>
                         {% if item.profile.is_active_user %}<span class="status-badge status-active">Active</span>
                         {% else %}<span class="status-badge status-hold">On Hold</span>{% endif %}
+                    </td>
+
+                    <!-- Approver Data Cell -->
+                    <td style="border-left:1px solid var(--border-color);">
+                        {% if not item.user.is_superuser %}
+                            <span class="display-val approver-text" id="approver_text_{{ item.user.id }}" style="color: #27ae60; font-weight: 500; font-size:12px;">
+                                {% for approver in item.user.pageapprover_set.all %}
+                                    {{ approver.page_name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </span>
+                            <select class="edit-input perm-select-approver" data-field="approver_pages" multiple style="height: 50px;">
+                                <option value="Confirm Order Entry">Confirm Order Entry</option>
+                                <option value="Buyer Entry">Buyer Entry</option>
+                                <option value="Knit Machine Entry">Knit Machine Entry</option>
+                            </select>
+                        {% else %}
+                            <span style="color:#e74c3c; font-size:12px; font-weight:bold;">All Pages</span>
+                        {% endif %}
                     </td>
 
                     {% for page in pages %}
@@ -139,12 +171,23 @@
 
 <script>
     const csrfToken = '{{ csrf_token }}';
+
     function toggleEdit(userId) {
         const row = document.getElementById('row-' + userId);
         row.querySelectorAll('.display-val').forEach(el => el.style.display = 'none');
         row.querySelectorAll('.edit-input').forEach(el => el.style.display = 'inline-block');
         row.querySelector('.btn-edit').style.display = 'none';
         row.querySelector('.btn-save').style.display = 'inline-block';
+
+        // Approver Select Logic
+        let approverText = document.getElementById('approver_text_' + userId).innerText;
+        let approverArr = approverText.split(',').map(item => item.trim());
+        let approverSelect = row.querySelector('.perm-select-approver');
+        if (approverSelect) {
+            Array.from(approverSelect.options).forEach(opt => {
+                opt.selected = approverArr.includes(opt.value);
+            });
+        }
     }
 
     function saveUser(userId) {
@@ -157,9 +200,20 @@
             password: row.querySelector('[data-field="password"]').value,
             designation: row.querySelector('[data-field="designation"]').value,
             department: row.querySelector('[data-field="department"]').value,
-            permissions: {}
+            permissions: {},
+            approver_pages: []
         };
-        row.querySelectorAll('.perm-select').forEach(select => { payload.permissions[select.getAttribute('data-page')] = select.value; });
+        
+        row.querySelectorAll('.perm-select').forEach(select => { 
+            payload.permissions[select.getAttribute('data-page')] = select.value; 
+        });
+
+        // Get selected approver pages
+        let approverSelect = row.querySelector('.perm-select-approver');
+        if (approverSelect) {
+            payload.approver_pages = Array.from(approverSelect.selectedOptions).map(opt => opt.value);
+        }
+
         fetch("{% url 'update_user_ajax' %}", {
             method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify(payload)
         }).then(res => res.json()).then(data => {

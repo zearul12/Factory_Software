@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.db import IntegrityError
 from .models import UserProfile, PagePermission
 from core.models import AppSetting # মাস্টার সেটিং থেকে ডাটা টানার জন্য
+from core.models import PageApprover # Approver মডেল ইম্পোর্ট করা হলো
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -51,6 +52,13 @@ def user_management(request):
                 designation=request.POST.get('designation'), 
                 department=request.POST.get('department')
             )
+            
+            # --- New Logic: Save Approver Pages (For New User) ---
+            approver_pages = request.POST.getlist('approver_pages')
+            if approver_pages:
+                for page in approver_pages:
+                    PageApprover.objects.create(user=user, page_name=page)
+
             for page in AVAILABLE_PAGES:
                 PagePermission.objects.create(user=user, page_name=page, access_level='Not')
             messages.success(request, "User created successfully!")
@@ -96,7 +104,7 @@ def update_user_ajax(request):
         elif action == 'save_edit':
             user_obj.first_name = data.get('full_name', user_obj.first_name)
             
-            # যদি নতুন পাসওয়ার্ড দেয়, তবে সেটি আপডেট হবে
+            # যদি নতুন পাসওয়ার্ড দেয়, তবে সেটি আপডেট হবে
             new_password = data.get('password')
             if new_password:
                 user_obj.set_password(new_password)
@@ -112,5 +120,15 @@ def update_user_ajax(request):
                 p_obj, _ = PagePermission.objects.get_or_create(user=user_obj, page_name=page)
                 p_obj.access_level = access
                 p_obj.save()
+                
+            # --- New Logic: Update Approver Pages (For Existing User) ---
+            approver_pages = data.get('approver_pages', [])
+            
+            # Delete old permissions first
+            PageApprover.objects.filter(user=user_obj).delete()
+            
+            # Save new permissions
+            for page in approver_pages:
+                PageApprover.objects.create(user=user_obj, page_name=page)
                 
             return JsonResponse({'status': 'success'})
