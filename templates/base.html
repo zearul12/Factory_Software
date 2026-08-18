@@ -97,12 +97,14 @@
             <div class="nav-item-left"><i class="fa-solid fa-chart-line icon" style="color: #00a8ff;"></i> <span>Dashboard</span></div>
         </a>
 
+        <!-- 1. Marketing & Mrc. -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-bullhorn icon" style="color: #e84118;"></i> <span>Marketing & Mrc.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu">
-            <a href="{% url 'confirm_order_entry' %}">Confirm Order Entry</a>
+            <!-- আগের লিংক মুছে দেওয়া হয়েছে, ভবিষ্যতে নতুন কিছু আসলে এখানে দেব -->
+            <a href="#">Dashboard</a>
         </div>
 
         <div class="nav-item" onclick="toggleSubmenu(this)">
@@ -137,11 +139,23 @@
         </div>
         <div class="submenu"><a href="#">Development</a></div>
 
+        <!-- 6. Production Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-cogs icon" style="color: #00cec9;"></i> <span>Production Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
-        <div class="submenu"><a href="#">Knitting</a><a href="#">Linking</a><a href="#">Finishing</a></div>
+        <div class="submenu">
+            <!-- Nested Menu: Knitting Section -->
+            <div class="nested-nav-item" onclick="toggleNestedSubmenu(this, event)">
+                <span>Knitting Section</span> <i class="fa-solid fa-chevron-down nested-arrow"></i>
+            </div>
+            <div class="nested-submenu">
+                <a href="{% url 'knitting_order_entry' %}"><i class="fa-solid fa-folder-plus" style="margin-right: 5px;"></i> Order Entry</a>
+            </div>
+            
+            <a href="#">Linking Section</a>
+            <a href="#">Finishing Section</a>
+        </div>
 
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-check-double icon" style="color: #e84393;"></i> <span>Quality Department</span></div>
@@ -327,7 +341,7 @@
         
         function quickApprove(jobNo, event) {
             event.stopPropagation();
-            fetch('/marketing/ajax/order-action/', {
+            fetch('/production/knitting/ajax/order-action/', {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
                 body: JSON.stringify({action: 'approve', job_no: jobNo})
             }).then(res=>res.json()).then(data => {
@@ -337,7 +351,7 @@
 
         function quickApproveAll(event) {
             event.stopPropagation();
-            fetch('/marketing/ajax/order-action/', {
+            fetch('/production/knitting/ajax/order-action/', {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
                 body: JSON.stringify({action: 'approve_all'})
             }).then(res=>res.json()).then(data => {
@@ -366,6 +380,16 @@
         .modal-icon { font-size: 40px; margin-bottom: 15px; }
         .modal-text { font-size: 15px; color: var(--main-text); margin-bottom: 25px; font-weight: 500;}
         .btn-confirm { padding: 8px 25px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
+
+    /* Nested Submenu CSS */
+        .nested-nav-item { padding: 10px 20px 10px 60px; cursor: pointer; color: #bbb; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-size: 14px;}
+        .nested-nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); border-left: 3px solid #00a8ff; }
+        .nested-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; background: rgba(0,0,0,0.2); }
+        .nested-submenu.show { max-height: 200px; }
+        .nested-submenu a { padding-left: 80px; font-size: 13px; color: #999; }
+        .nested-submenu a:hover { color: #fff; }
+        .nested-arrow { font-size: 10px; transition: transform 0.3s; }
+        .nested-nav-item.active .nested-arrow { transform: rotate(180deg); }
     </style>
 
     <div id="global-modal" class="custom-modal-overlay">
@@ -434,7 +458,7 @@
         // Quick Approve using beautiful Modal
         function quickApprove(jobNo, event) {
             event.stopPropagation();
-            fetch('/marketing/ajax/order-action/', {
+            fetch('/production/knitting/ajax/order-action/', {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
                 body: JSON.stringify({action: 'approve', job_no: jobNo})
             }).then(res=>res.json()).then(data => {
@@ -444,7 +468,7 @@
 
         function quickApproveAll(event) {
             event.stopPropagation();
-            fetch('/marketing/ajax/order-action/', {
+            fetch('/production/knitting/ajax/order-action/', {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
                 body: JSON.stringify({action: 'approve_all'})
             }).then(res=>res.json()).then(data => {
@@ -461,6 +485,15 @@
         });
 
         window.addEventListener('load', fetchNotifications);
+
+        function toggleNestedSubmenu(element, event) {
+            event.stopPropagation();
+            element.classList.toggle('active');
+            let submenu = element.nextElementSibling;
+            if (submenu && submenu.classList.contains('nested-submenu')) {
+                submenu.classList.toggle('show');
+            }
+        }
     </script>
 </body>
 </body>

@@ -2,9 +2,11 @@ from django.urls import path
 from .views import (
     system_settings_view, buyer_entry_view, update_buyer_ajax, 
     knit_machine_entry_view, update_knit_machine_ajax, 
-    confirm_order_entry_view, search_buyer_ajax, 
-    save_confirm_order_ajax, get_order_details_ajax, 
-    get_notifications_ajax, search_old_job_ajax, order_action_ajax
+    get_notifications_ajax,
+    
+    # Knitting Production Views
+    knitting_order_entry_view, search_knitting_job_ajax, 
+    save_knitting_order_ajax, get_knitting_order_details_ajax, knitting_order_action_ajax
 )
 
 urlpatterns = [
@@ -19,14 +21,16 @@ urlpatterns = [
     path('hr-admin/knit-machine/', knit_machine_entry_view, name='knit_machine_entry'),
     path('hr-admin/knit-machine/ajax/', update_knit_machine_ajax, name='update_knit_machine_ajax'),
 
-    # Order Management
-    path('marketing/confirm-order/', confirm_order_entry_view, name='confirm_order_entry'),
-    path('marketing/ajax/search-buyer/', search_buyer_ajax, name='search_buyer_ajax'),
-    path('marketing/ajax/save-order/', save_confirm_order_ajax, name='save_confirm_order_ajax'),
-    path('marketing/ajax/get-order/<str:job_no>/', get_order_details_ajax, name='get_order_details_ajax'),
-    path('marketing/ajax/search-job/', search_old_job_ajax, name='search_old_job_ajax'),
-    path('marketing/ajax/order-action/', order_action_ajax, name='order_action_ajax'),
-    
     # Notifications
     path('ajax/notifications/', get_notifications_ajax, name='get_notifications_ajax'),
+    
+    # Production Department -> Knitting Section Master Entry
+    path('production/knitting/order-entry/', knitting_order_entry_view, name='knitting_order_entry'),
+    path('production/knitting/ajax/search-job/', search_knitting_job_ajax, name='search_knitting_job_ajax'),
+    path('production/knitting/ajax/save-order/', save_knitting_order_ajax, name='save_knitting_order_ajax'),
+    
+    # FIXED: এখানে <str:job_no> এর জায়গায় <str:sys_id> করে দেওয়া হয়েছে
+    path('production/knitting/ajax/get-order/<str:sys_id>/', get_knitting_order_details_ajax, name='get_knitting_order_details_ajax'),
+    
+    path('production/knitting/ajax/order-action/', knitting_order_action_ajax, name='knitting_order_action_ajax'),
 ]

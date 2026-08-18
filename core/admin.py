@@ -1,24 +1,27 @@
 from django.contrib import admin
-from .models import FactorySetting
+from .models import (
+    FactorySetting, AppSetting, Buyer, KnitMachine,
+    PageApprover, SystemNotification,
+    KnittingOrder, KnittingColor, KnittingSize
+)
 
-# অ্যাডমিন প্যানেলে FactorySetting যুক্ত করা হলো
+# Basic Settings & Master Data
 admin.site.register(FactorySetting)
-from django.contrib import admin
-from .models import OrderMaster, OrderPO, OrderColor, OrderSizeBreakdown, PageApprover, SystemNotification
-
-# ডাটাবেজে সুন্দর করে টেবিল আকারে দেখার জন্য কাস্টম এডমিন প্যানেল
-class OrderMasterAdmin(admin.ModelAdmin):
-    list_display = ('job_no', 'buyer', 'style_no', 'total_order_qty', 'status', 'created_at', 'created_by')
-    search_fields = ('job_no', 'style_no')
-
-class OrderSizeBreakdownAdmin(admin.ModelAdmin):
-    list_display = ('order', 'po', 'color', 'size_name', 'qty', 'sort_order')
-    list_filter = ('order', 'po', 'color')
-
-# টেবিলগুলো এডমিন প্যানেলে রেজিস্টার করা হলো
-admin.site.register(OrderMaster, OrderMasterAdmin)
-admin.site.register(OrderPO)
-admin.site.register(OrderColor)
-admin.site.register(OrderSizeBreakdown, OrderSizeBreakdownAdmin)
+admin.site.register(AppSetting)
+admin.site.register(Buyer)
+admin.site.register(KnitMachine)
 admin.site.register(PageApprover)
 admin.site.register(SystemNotification)
+
+# Order Models with customized display
+class KnittingOrderAdmin(admin.ModelAdmin):
+    list_display = ('system_id', 'job_no', 'buyer', 'style_no', 'total_order_qty', 'status', 'created_at')
+    search_fields = ('system_id', 'job_no', 'style_no')
+    list_filter = ('status', 'buyer')
+
+class KnittingSizeAdmin(admin.ModelAdmin):
+    list_display = ('color', 'size_name', 'order_qty', 'plan_qty', 'total_lbs')
+
+admin.site.register(KnittingOrder, KnittingOrderAdmin)
+admin.site.register(KnittingColor)
+admin.site.register(KnittingSize, KnittingSizeAdmin)

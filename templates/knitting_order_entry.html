@@ -1,0 +1,822 @@
+{% extends 'base.html' %}
+{% block title %}Knitting Order Entry - {{ factory_name }}{% endblock %}
+{% block page_title %}KNITTING ORDER ENTRY{% endblock %}
+
+{% block content %}
+<style>
+    .highlight-change {
+        border: 2px solid #e74c3c !important;
+        background-color: rgba(231, 76, 60, 0.08) !important;
+        box-shadow: 0 0 10px rgba(231, 76, 60, 0.3) !important;
+        animation: pulse-border 1.5s infinite;
+    }
+    @keyframes pulse-border {
+        0% { border-color: #e74c3c; } 50% { border-color: #ff7675; } 100% { border-color: #e74c3c; }
+    }
+
+    .entry-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
+    .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;}
+    .badge { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #27ae60; color: white;}
+    
+    .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;}
+    
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; font-size: 12.5px;}
+    body.dark-mode .form-group label { color: #ecf0f1; }
+    .form-group label span { color: #e74c3c; }
+    .form-control { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); transition: 0.2s; height: 35px; box-sizing: border-box;}
+    .form-control:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+    
+    .job-group { display: flex; align-items: stretch; height: 35px; width: 100%; box-sizing: border-box;}
+    .job-prefix { background: rgba(0,0,0,0.05); border: 1px solid var(--border-color); padding: 0 8px; font-size: 13px; font-weight: bold; color: #7f8c8d; display: flex; align-items: center; flex-shrink: 0;}
+    .job-input { border: 1px solid var(--border-color); font-weight: bold; color: #007bff; background: var(--main-bg); text-align: center; outline: none; transition: 0.2s; font-size: 14px; min-width: 0; width: 100%;}
+    .job-input:focus { border-color: #007bff; }
+
+    .op-tags { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--main-bg); min-height: 35px;}
+    .tag { background: #1abc9c; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;}
+    .tag span { cursor: pointer; font-weight: bold; }
+    .tag span:hover { color: #ffeaa7; }
+    .quick-op-btn { padding: 3px 8px; font-size: 11px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--main-text); border-radius: 12px; cursor: pointer; transition: 0.2s;}
+    .quick-op-btn:hover { background: #007bff; color: white; border-color: #007bff;}
+
+    .split-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .left-panel { flex: 0 0 280px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .right-panel { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg);}
+    
+    .color-item { display: flex; justify-content: space-between; padding: 10px; background: var(--card-bg); border: 1px solid var(--border-color); margin-bottom: 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 500;}
+    .color-item.active { border-left: 4px solid #007bff; background: rgba(0,123,255,0.05); }
+    .color-item:hover { background: rgba(0,0,0,0.05); }
+    
+    .summary-box { margin-top: 20px; border-top: 2px dashed var(--border-color); padding-top: 15px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 600; color: #555;}
+    body.dark-mode .summary-row { color: #ccc; }
+    .summary-row.total { font-size: 14px; font-weight: 900; color: #2c3e50; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px;}
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 12px; color: var(--main-text);}
+    th { background: rgba(0,0,0,0.05); font-weight: 600;}
+    .td-input { width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 3px; text-align: center; background: var(--main-bg); color: var(--main-text); transition: 0.2s;}
+    .td-input:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.3); outline: none; }
+    
+    .action-bar { display: flex; justify-content: center; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);}
+    .btn-action { padding: 10px 25px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px;}
+    .btn-new { background: #27ae60; } .btn-update { background: #2980b9; } 
+    .btn-copy { background: #8e44ad; } .btn-hold { background: #f39c12; color: #333;} 
+    .btn-clear { background: #7f8c8d; }
+    .btn-danger { background: #e74c3c; }
+    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+    /* PERFECT POSITIONING FIX FOR DROPDOWNS */
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: var(--card-bg); border: 1px solid #007bff; max-height: 200px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+    .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
+    
+    .fast-input { border: 1px dashed #007bff; background: transparent; padding: 4px 8px; color: var(--main-text); border-radius: 4px; outline: none; font-size: 12px; transition: 0.2s;}
+    .fast-input:focus { border: 1px solid #007bff; background: rgba(0,123,255,0.05);}
+</style>
+
+<div id="order-master">
+    <div id="rejectionBanner" style="display:none; padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: bold; font-size: 14px; text-align: center; background: #ffebee; color: #c62828; border: 1px dashed #e74c3c;"></div>
+    <!-- Main Entry Card -->
+    <div class="entry-card">
+        <div class="form-header">
+            <div style="flex: 1; max-width: 500px;">
+                <div style="position: relative; width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: #007bff; z-index: 10;"></i>
+                    <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Advanced Search (Job, Buyer, Style, Color or PO)..." oninput="searchGlobalJob(this.value)" autocomplete="off">
+                    <div id="globalJobSearchList" class="autocomplete-list"></div>
+                </div>
+            </div>
+            
+            <div>
+                <span id="systemIdDisplay" style="font-weight:bold; font-size:13px; margin-right:15px; color:#007bff; display:none;">SYS ID: <span id="s_id_val"></span></span>
+                <span style="font-weight:bold; font-size:13px; margin-right:10px;">MODE :</span>
+                <span class="badge" id="modeBadge">NEW ENTRY</span>
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="form-group">
+                <label>JOB NO. <span style="color:#e74c3c;">*</span></label>
+                <div class="job-group">
+                    <span class="job-prefix" style="border-radius: 4px 0 0 4px; border-right: none;">{{ job_prefix }}-</span>
+                    <input type="text" id="job_year" class="job-input fast-nav" value="{{ current_year }}" maxlength="2" style="width: 35px; flex-shrink: 0;">
+                    <span class="job-prefix" style="border-left: none; border-right: none; padding: 0 4px;">-</span>
+                    <input type="text" id="job_sequence" class="job-input fast-nav" placeholder="00000" maxlength="5" style="border-radius: 0 4px 4px 0;" onblur="padJobSeq(this)" autofocus>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>BUYER <span style="color:#e74c3c;">*</span></label>
+                <div style="position: relative; width: 100%;">
+                    <input type="text" id="m_buyer" class="form-control fast-nav" placeholder="Type & Select" oninput="suggestBuyer()" autocomplete="off" onblur="validateBuyerWithDelay()">
+                    <div id="buyerList" class="autocomplete-list"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>STYLE <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="m_style" class="form-control fast-nav" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>PO NUMBER(S) <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="m_po" class="form-control fast-nav" placeholder="Comma separated..." autocomplete="off">
+            </div>
+        </div>
+        
+        <div class="grid-row">
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>PLAN % <span style="color:#e74c3c;">*</span></label>
+                    <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>GAUGE <span style="color:#e74c3c;">*</span></label>
+                    <div style="position: relative; width: 100%;">
+                        <input type="text" id="m_gauge" class="form-control fast-nav" placeholder="Select" autocomplete="off" readonly style="cursor: pointer; background: #fff;" onclick="showGauges()" onfocus="showGauges()">
+                        <div id="gaugeList" class="autocomplete-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>KNITTING CLOSING PLAN <span style="color:#e74c3c;">*</span></label>
+                <input type="date" id="m_kcdDate" class="form-control fast-nav" onclick="this.showPicker()" onfocus="this.showPicker()" style="height: 35px;">
+            </div>
+            
+            <div class="form-group" style="grid-column: span 2;">
+                <label>SELECTED OPERATIONS <span style="color:#e74c3c;">*</span> <small style="color:#777; font-weight:normal;">(Body is Mandatory)</small></label> 
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.02); padding: 5px 10px; border-radius: 4px; border: 1px dashed var(--border-color); margin-bottom: 5px;">
+                    <div id="quickOpsContainer" style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size:11px; color:#777; font-weight:bold; white-space: nowrap;">Quick Select:</span>
+                        {% for op in quick_ops %}
+                            <button type="button" class="quick-op-btn" onclick="addOp('{{ op }}')">{{ op }}{% if op|lower == 'body' %} <span style="color:#e74c3c; font-weight:bold;">*</span>{% endif %}</button>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <input type="text" id="customOpInput" class="fast-input" style="width: 140px;" placeholder="+ Custom Operation" onkeydown="if(event.key === 'Enter'){ addOp(this.value); this.value=''; }">
+                    </div>
+                </div>
+                <div id="opContainer" class="op-tags" style="min-height: 32px; margin-top: 5px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="entry-card split-layout">
+        <div class="left-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <strong style="font-size:14px; color:var(--main-text);">COLOR LIST <span style="color:#e74c3c;">*</span></strong>
+            </div>
+            <input type="text" id="fastColorInput" class="form-control" placeholder="+ Type Color & Enter" style="margin-bottom:10px; border:1px dashed #27ae60;" onkeydown="if(event.key === 'Enter'){ createColor(this.value); this.value=''; }">
+            
+            <div id="colorContainer"></div>
+            
+            <div class="summary-box">
+                <div class="summary-row"><span>Total Color</span> <strong id="sumColor">0</strong></div>
+                <div class="summary-row"><span>Total Lot</span> <strong id="sumLot">0</strong></div>
+                <div class="summary-row"><span>Total Size</span> <strong id="sumSize">0</strong></div>
+                <div class="summary-row total" style="margin-top: 10px;"><span>Total Order Qty</span> <span id="sumOrdQty">0</span></div>
+                <div class="summary-row total" style="color:#27ae60;"><span>Total Plan Qty</span> <span id="sumPlanQty">0</span></div>
+                <div class="summary-row total" style="color:#e74c3c; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+                    <span>Total Weight (Lbs)</span> <span id="sumTotalLbs">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel" id="rightPanel" style="display:none;">
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>SELECTED COLOR NAME</label>
+                    <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <label style="margin:0;">YARN LOT(S) <span style="color:#e74c3c;">*</span></label> 
+                        <input type="text" id="fastLotInput" class="fast-input" style="width: 160px;" placeholder="+ Type Lot & Enter / Tab" onkeydown="handleLotInput(event)">
+                    </div>
+                    <div id="lotContainer" class="op-tags" style="min-height:35px;"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+                    <label style="margin:0;">SIZE DETAILS & MATRIX</label>
+                    <select id="sizeFormatSelect" class="form-control" style="width:200px;" onchange="loadSizes()">
+                        <option value="">-- Auto Generate Sizes --</option>
+                        <option value="empty">Empty Custom Size</option>
+                    </select>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="20%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
+                            <th width="15%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
+                            <th width="15%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
+                            <th width="15%">SIZE WT (gm) <span style="color:#e74c3c;">*</span></th>
+                            <th width="15%">TOTAL (Lbs)</th>
+                            <th width="15%">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sizeTbody"></tbody>
+                    <tfoot id="sizeTfoot"></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <button class="btn-action btn-new" id="btnSave" onclick="saveKnittingOrder()"><i class="fa-solid fa-paper-plane"></i> Save & Submit</button>
+        <button class="btn-action btn-update" id="btnUpdate" style="display:none;" onclick="saveKnittingOrder()"><i class="fa-solid fa-pen-to-square"></i> Update Order</button>
+        <button class="btn-action btn-copy" id="btnCopy" style="display:none;" onclick="copyAsNew()"><i class="fa-solid fa-copy"></i> Copy as New</button>
+        <button class="btn-action btn-hold" id="btnHold" style="display:none;" onclick="holdOrder()"><i class="fa-solid fa-pause"></i> Hold</button>
+        <button class="btn-action btn-danger" id="btnReject" style="display:none;" onclick="openRejectModal()"><i class="fa-solid fa-xmark"></i> Reject</button>
+        <button class="btn-action btn-new" id="btnApprove" style="display:none;" onclick="approveOrderFromPage()"><i class="fa-solid fa-check"></i> Approve Order</button>
+        <button class="btn-action btn-clear" onclick="window.location.href=window.location.pathname;"><i class="fa-solid fa-rotate-right"></i> Clear All</button>
+    </div>
+</div>
+
+<div id="reject-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;">
+    <div style="background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 15px; color:#e74c3c;">Reason for Rejection</h3>
+        <textarea id="reject_reason_text" class="form-control" rows="3" placeholder="Write a note for the entry user..."></textarea>
+        <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+            <button class="btn-action btn-clear" onclick="document.getElementById('reject-modal').style.visibility='hidden'; document.getElementById('reject-modal').style.opacity='0';">Cancel</button>
+            <button class="btn-action btn-danger" onclick="submitReject()">Confirm Reject</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.isApprovalMode = false;
+    window.changedFields = [];
+    window.currentSystemId = ""; // System ID for updates
+
+    const dbBuyers = JSON.parse('{{ buyers_json|escapejs }}');
+    const dbGauges = JSON.parse('{{ gauges_json|escapejs }}');
+    const sizeTemplates = JSON.parse('{{ size_templates_json|escapejs }}');
+    const csrfToken = '{{ csrf_token }}';
+    
+    let orderData = { ops: [], colors: [] }; 
+    let actColId = null;
+    let searchFocus = -1, buyerFocus = -1, gaugeFocus = -1;
+
+    window.onload = function() {
+        let tempSelect = document.getElementById('sizeFormatSelect');
+        for (let key in sizeTemplates) {
+            let opt = document.createElement('option');
+            opt.value = key; 
+            opt.innerText = key + ` (${sizeTemplates[key][0]} - ${sizeTemplates[key][sizeTemplates[key].length-1]})`;
+            tempSelect.appendChild(opt);
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const loadSysId = urlParams.get('load_sys_id');
+        if(loadSysId) {
+            window.isApprovalMode = true;
+            loadOrderDetails(loadSysId);
+        }
+    };
+
+    function padJobSeq(el) {
+        let val = el.value.trim();
+        if(val && /^\d+$/.test(val)) { el.value = val.padStart(5, '0'); }
+    }
+
+    function addActive(x, currentFocus) {
+        if (!x) return false;
+        removeActive(x);
+        if (currentFocus >= x.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (x.length - 1);
+        x[currentFocus].classList.add("active");
+        x[currentFocus].scrollIntoView({block: "nearest"});
+        return currentFocus;
+    }
+    function removeActive(x) { for (var i = 0; i < x.length; i++) x[i].classList.remove("active"); }
+
+    document.addEventListener('keydown', function(e) {
+        let globalModal = document.getElementById('global-modal');
+        let rejectModal = document.getElementById('reject-modal');
+        if ((globalModal && globalModal.classList.contains('show')) || (rejectModal && rejectModal.style.visibility === 'visible')) return;
+
+        if (e.target.id === 'globalJobSearch') {
+            let list = document.getElementById("globalJobSearchList"); let items = list ? list.getElementsByTagName("div") : null;
+            if (e.key === 'ArrowDown') { e.preventDefault(); searchFocus++; searchFocus = addActive(items, searchFocus); return; }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); searchFocus--; searchFocus = addActive(items, searchFocus); return; }
+            else if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                if (searchFocus > -1 && items) { items[searchFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
+            }
+        }
+
+        if (e.target.id === 'm_buyer') {
+            let list = document.getElementById("buyerList"); let items = list ? list.getElementsByTagName("div") : null;
+            if (e.key === 'ArrowDown') { e.preventDefault(); buyerFocus++; buyerFocus = addActive(items, buyerFocus); return; }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); buyerFocus--; buyerFocus = addActive(items, buyerFocus); return; }
+            else if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                if (buyerFocus > -1 && items) { items[buyerFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
+            }
+        }
+        
+        if (e.target.id === 'm_gauge') {
+            let list = document.getElementById("gaugeList"); let items = list ? list.getElementsByTagName("div") : null;
+            if (e.key === 'ArrowDown') { e.preventDefault(); gaugeFocus++; gaugeFocus = addActive(items, gaugeFocus); return; }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); gaugeFocus--; gaugeFocus = addActive(items, gaugeFocus); return; }
+            else if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                if (gaugeFocus > -1 && items) { items[gaugeFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
+            }
+        }
+
+        if(e.key === 'Enter') {
+            if(e.target.classList.contains('fast-nav')) {
+                e.preventDefault();
+                if(e.target.id === 'job_sequence') padJobSeq(e.target);
+                let navs = Array.from(document.querySelectorAll('.fast-nav'));
+                let idx = navs.indexOf(e.target);
+                if (idx > -1 && idx < navs.length - 1) { navs[idx + 1].focus(); navs[idx + 1].select(); }
+                else if (idx === navs.length - 1) { document.getElementById('fastColorInput').focus(); }
+            }
+            
+            if (e.target.classList.contains('matrix-qty')) {
+                e.preventDefault(); 
+                let qtys = Array.from(document.querySelectorAll('.matrix-qty'));
+                let idx = qtys.indexOf(e.target); 
+                if (idx > -1 && idx < qtys.length - 1) { qtys[idx + 1].focus(); qtys[idx + 1].select(); }
+                else if (idx === qtys.length - 1) {
+                    let firstWt = document.querySelector('.matrix-wt');
+                    if(firstWt) { firstWt.focus(); firstWt.select(); }
+                }
+            }
+            if (e.target.classList.contains('matrix-wt')) {
+                e.preventDefault(); 
+                let wts = Array.from(document.querySelectorAll('.matrix-wt'));
+                let idx = wts.indexOf(e.target); 
+                if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
+            }
+        }
+    });
+
+    function handleLotInput(e) {
+        if(e.key === 'Enter') { e.preventDefault(); addLot(e.target.value); e.target.value = ''; } 
+        else if (e.key === 'Tab') { e.preventDefault(); document.getElementById('sizeFormatSelect').focus(); }
+    }
+
+    function searchGlobalJob(query) {
+        searchFocus = -1;
+        let list = document.getElementById('globalJobSearchList');
+        if (query.length < 2) { list.style.display = 'none'; return; }
+        fetch(`{% url 'search_knitting_job_ajax' %}?q=${query}`).then(res => res.json()).then(data => {
+            list.innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(job => {
+                    let div = document.createElement('div'); div.className = 'autocomplete-item'; 
+                    div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} (${job.style}) <br><span style="font-size:11px; color:#888;">SYS ID: ${job.sys_id}</span> <span style="font-weight:bold; color:#e74c3c; float:right;">[${job.status}]</span>`;
+                    div.onmousedown = function() { document.getElementById('globalJobSearch').value = job.job_no; list.style.display = 'none'; loadOrderDetails(job.sys_id); };
+                    list.appendChild(div);
+                });
+                list.style.display = 'block'; 
+            } else { list.style.display = 'none'; }
+        });
+    }
+    document.addEventListener("click", function (e) { if (e.target.id !== "globalJobSearch") { let l=document.getElementById("globalJobSearchList"); if(l) l.style.display = "none"; } });
+
+    function suggestBuyer() {
+        buyerFocus = -1;
+        let input = document.getElementById('m_buyer').value.toLowerCase();
+        let list = document.getElementById('buyerList'); list.innerHTML = "";
+        
+        if(input.length < 1) { list.style.display = 'none'; return; }
+        
+        let matches = dbBuyers.filter(b => b.toLowerCase().includes(input));
+        matches.forEach(m => {
+            let div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerText = m;
+            div.onmousedown = () => { document.getElementById('m_buyer').value = m; list.style.display = 'none'; document.getElementById('m_style').focus(); };
+            list.appendChild(div);
+        });
+        list.style.display = matches.length ? 'block' : 'none';
+    }
+    
+    function validateBuyerWithDelay() {
+        setTimeout(() => {
+            let val = document.getElementById('m_buyer').value.trim();
+            if(val) {
+                let match = dbBuyers.find(b => b.toLowerCase() === val.toLowerCase());
+                if(match) { document.getElementById('m_buyer').value = match; }
+                else { showModal("Invalid Buyer! You must select a buyer from the suggestions."); document.getElementById('m_buyer').value = ''; }
+            }
+            document.getElementById("buyerList").style.display = "none";
+        }, 150);
+    }
+
+    function showGauges() {
+        gaugeFocus = -1;
+        let list = document.getElementById('gaugeList'); list.innerHTML = "";
+        
+        dbGauges.forEach(m => {
+            let div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerText = m;
+            div.onmousedown = () => { document.getElementById('m_gauge').value = m; list.style.display = 'none'; document.getElementById('m_kcdDate').focus(); };
+            list.appendChild(div);
+        });
+        list.style.display = 'block';
+    }
+    document.getElementById('m_gauge').addEventListener('blur', function() { setTimeout(() => { document.getElementById("gaugeList").style.display = "none"; }, 150); });
+
+    function addOp(name) { 
+        name = name.trim(); 
+        if(name) {
+            if(orderData.ops.some(o => o.toLowerCase() === name.toLowerCase())) { showModal(`Operation '${name}' is already added!`); return; }
+            orderData.ops.push(name); renderOps(); 
+        } 
+    }
+    function delOp(n) { orderData.ops = orderData.ops.filter(o => o !== n); renderOps(); }
+    function renderOps() { document.getElementById('opContainer').innerHTML = orderData.ops.map(o => `<div class="tag">${o} <span onclick="delOp('${o}')"><i class="fa-solid fa-xmark"></i></span></div>`).join(''); }
+
+    function generateId() { return Math.random().toString(36).substr(2, 9); }
+    function createColor(n) { 
+        n = n.trim(); 
+        if(n) { 
+            if(orderData.colors.some(c => c.name.toLowerCase() === n.toLowerCase())) { showModal(`Color '${n}' already exists!`); return; }
+            let c = { id: generateId(), name: n, lots: [], sizes: [], totalLbs: 0 }; 
+            orderData.colors.push(c); actColId = c.id; renderColors(); openRight(); document.getElementById('fastLotInput').focus(); 
+        } 
+    }
+    
+    function renderColors() { 
+        document.getElementById('colorContainer').innerHTML = orderData.colors.map(c => `
+            <div class="color-item ${c.id === actColId ? 'active' : ''}" onclick="selCol('${c.id}')">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-palette" style="color:#007bff;"></i>
+                    <span id="col_name_${c.id}">${c.name}</span>
+                </span>
+                <span id="col_lbs_${c.id}" style="color:#e74c3c; font-weight:bold;">${c.totalLbs || 0} Lbs</span>
+                <span style="color:#e74c3c; cursor:pointer;" onclick="event.stopPropagation(); delCol('${c.id}')"><i class="fa-solid fa-trash-can"></i></span>
+            </div>`).join(''); 
+        calcAll(); 
+    }
+    
+    function selCol(id) { actColId = id; renderColors(); openRight(); }
+    function delCol(id) { orderData.colors = orderData.colors.filter(c => c.id !== id); actColId = orderData.colors.length > 0 ? orderData.colors[0].id : null; renderColors(); openRight(); }
+    
+    function openRight() { 
+        let p = document.getElementById('rightPanel'); 
+        if(!actColId) { p.style.display = 'none'; return; } 
+        p.style.display = 'block'; 
+        let c = orderData.colors.find(x => x.id === actColId); 
+        document.getElementById('currColorName').value = c.name; 
+        document.getElementById('sizeFormatSelect').value = ""; 
+        renderLots(c); renderSizes(c); 
+    }
+    function updateColName() { 
+        let newName = document.getElementById('currColorName').value.trim();
+        if(newName && !orderData.colors.some(c => c.id !== actColId && c.name.toLowerCase() === newName.toLowerCase())) {
+            orderData.colors.find(c => c.id === actColId).name = newName; renderColors(); 
+        } else if(newName) { showModal("This color name already exists!"); document.getElementById('currColorName').value = orderData.colors.find(c => c.id === actColId).name; }
+    }
+    
+    function addLot(n) { 
+        n = n.trim(); 
+        if(n) { 
+            let c = orderData.colors.find(c => c.id === actColId);
+            if(c.lots.some(l => l.toLowerCase() === n.toLowerCase())) { showModal(`Lot '${n}' already exists in this color!`); return; }
+            c.lots.push(n); openRight(); calcAll(); 
+        } 
+    }
+    function delLot(idx) { orderData.colors.find(c => c.id === actColId).lots.splice(idx, 1); openRight(); calcAll(); }
+    function renderLots(c) { document.getElementById('lotContainer').innerHTML = c.lots.map((l, i) => `<div class="tag" style="background:#8e44ad;">${l} <span onclick="delLot(${i})"><i class="fa-solid fa-xmark"></i></span></div>`).join(''); }
+    
+    function loadSizes() { 
+        let f = document.getElementById('sizeFormatSelect').value; 
+        if(!f || !actColId) return; 
+        let c = orderData.colors.find(x => x.id === actColId); 
+        let sizesArr = f === 'empty' ? [''] : sizeTemplates[f];
+        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, sWeight: "", lbs: 0, sort: 1 })); 
+        renderSizes(c); calcAll(); 
+        setTimeout(() => { let firstQty = document.querySelector('.matrix-qty'); if(firstQty) firstQty.focus(); }, 100);
+    }
+    
+    function renderSizes(c) { 
+        document.getElementById('sizeTbody').innerHTML = c.sizes.map((s, i) => {
+            let safeCName = c.name.replace(/\s+/g, '_');
+            let safeSName = s.name.replace(/\s+/g, '_');
+            let qId = `qty_${safeCName}_${safeSName}`;
+            let wId = `wt_${safeCName}_${safeSName}`;
+            
+            let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : '';
+            let wHi = (window.isApprovalMode && window.changedFields.includes(wId)) ? 'highlight-change' : '';
+            
+            return `
+            <tr>
+                <td>${i+1}</td>
+                <td><input type="text" class="td-input" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
+                <td><input type="text" id="${qId}" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
+                <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
+                <td><input type="text" id="${wId}" class="td-input matrix-wt ${wHi}" value="${s.sWeight}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateWt('${s.id}', this.value)"></td>
+                <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
+                <td>
+                    <button class="btn-circle btn-plus" style="margin-right:10px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
+                </td>
+            </tr>`
+        }).join(''); 
+    }
+    
+    function updateSzName(id, val) { orderData.colors.find(x => x.id === actColId).sizes.find(x => x.id === id).name = val; }
+    function delSz(id) { let c = orderData.colors.find(x => x.id === actColId); c.sizes = c.sizes.filter(s => s.id !== id); renderSizes(c); calcAll(); }
+    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, sWeight: "", lbs: 0, sort: 1}); renderSizes(c); calcAll(); }
+    function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); }
+    function updateWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.sWeight = parseInt(val) || 0; calcAll(); }
+    
+    function calcAll() { 
+        let pct = parseFloat(document.getElementById('m_planPct').value) || 0; 
+        document.getElementById('displayPct').innerText = pct;
+        
+        let tCol = 0, tLot = 0, tSize = 0, tOrdQty = 0, tPlanQty = 0, tGrandLbs = 0; 
+        let tableOrd = 0, tablePlan = 0, tableLbs = 0;
+
+        orderData.colors.forEach(c => { 
+            tCol++; tLot += c.lots.length; tSize += c.sizes.length; 
+            let cTotalLbs = 0; 
+            c.sizes.forEach((s, idx) => { 
+                s.sort = idx + 1;
+                s.pQty = Math.ceil(s.oQty + (s.oQty * (pct/100))); 
+                tOrdQty += s.oQty; tPlanQty += s.pQty; 
+                let td = document.getElementById('pQty_' + s.id); if(td) td.innerText = s.pQty; 
+                
+                let rowLbs = 0; 
+                if(s.sWeight > 0 && s.pQty > 0) rowLbs = Math.round((s.sWeight * s.pQty) / 453.592); 
+                s.lbs = rowLbs;
+                let tdLbs = document.getElementById('lbs_' + s.id); if(tdLbs) tdLbs.innerText = rowLbs; 
+                cTotalLbs += rowLbs; 
+
+                if(c.id === actColId) { tableOrd += s.oQty; tablePlan += s.pQty; tableLbs += rowLbs; }
+            }); 
+            c.totalLbs = cTotalLbs; tGrandLbs += cTotalLbs; 
+            
+            let lbsEl = document.getElementById('col_lbs_' + c.id); 
+            if(lbsEl) lbsEl.innerText = cTotalLbs + " Lbs";
+        }); 
+        
+        document.getElementById('sumColor').innerText = tCol; 
+        document.getElementById('sumLot').innerText = tLot; 
+        document.getElementById('sumSize').innerText = tSize; 
+        document.getElementById('sumOrdQty').innerText = tOrdQty.toLocaleString(); 
+        document.getElementById('sumPlanQty').innerText = tPlanQty.toLocaleString(); 
+        document.getElementById('sumTotalLbs').innerText = tGrandLbs.toLocaleString(); 
+
+        if (actColId) {
+            let avgDzWt = tablePlan > 0 ? ((tableLbs / tablePlan) * 12).toFixed(2) : "0.00";
+            document.getElementById('sizeTfoot').innerHTML = `
+                <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid var(--border-color);">
+                    <td colspan="2" style="text-align:right;">MATRIX TOTAL:</td>
+                    <td style="color:#e74c3c; font-size:14px;">${tableOrd}</td>
+                    <td style="color:#27ae60; font-size:14px;">${tablePlan}</td>
+                    <td style="color:#007bff;">Avg (Lbs/Dz): <br><span style="font-size:14px;">${avgDzWt}</span></td>
+                    <td style="color:#e74c3c; font-size:14px;">${tableLbs}</td>
+                    <td></td>
+                </tr>
+            `;
+        }
+    }
+
+    function loadOrderDetails(sys_id) {
+    fetch(`/production/knitting/ajax/get-order/${sys_id}/`)
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === 'success') {
+                let d = res.data;
+
+                // --- Rejection Banner Logic ---
+                let rBanner = document.getElementById('rejectionBanner');
+
+                if (d.status === 'Rejected') {
+                    rBanner.style.display = 'block';
+                    rBanner.innerHTML = `
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <b>THIS ORDER WAS REJECTED!</b>
+                        <br>
+                        <span style="font-weight:normal; font-size:13px; color:#555; display:block; margin-top:5px;">
+                            Reason: ${d.reject_reason || "No reason provided."}
+                        </span>
+                    `;
+                } else {
+                    rBanner.style.display = 'none';
+                }
+
+                window.changedFields = d.changed_fields || [];
+                window.currentSystemId = d.system_id;
+                
+                let parts = d.job_no.split('-');
+                document.getElementById('job_year').value = parts[1];
+                document.getElementById('job_sequence').value = parts[2];
+                document.getElementById('m_buyer').value = d.buyer_name;
+                document.getElementById('m_style').value = d.style_no;
+                document.getElementById('m_po').value = d.po_numbers;
+                document.getElementById('m_planPct').value = d.plan_pct || "";
+                document.getElementById('m_gauge').value = d.gauge;
+                document.getElementById('m_kcdDate').value = d.kcd_date;
+                
+                orderData.ops = d.operations 
+                    ? d.operations.split(',').map(s => s.trim()) 
+                    : [];
+
+                renderOps();
+
+                orderData.colors = [];
+
+                d.colors.forEach(c => {
+                    let col = {
+                        id: generateId(),
+                        name: c.name,
+                        lots: c.lots 
+                            ? c.lots.split(',').map(s => s.trim()) 
+                            : [],
+                        sizes: [],
+                        totalLbs: 0
+                    };
+
+                    c.sizes.forEach(sz => {
+                        col.sizes.push({
+                            id: generateId(),
+                            name: sz.name,
+                            oQty: sz.oQty,
+                            pQty: sz.pQty,
+                            sWeight: sz.sWeight,
+                            lbs: parseFloat(sz.lbs),
+                            sort: 1
+                        });
+                    });
+
+                    orderData.colors.push(col);
+                });
+                
+                actColId = orderData.colors.length > 0 
+                    ? orderData.colors[0].id 
+                    : null;
+
+                renderColors();
+                openRight();
+                calcAll();
+
+                document.querySelectorAll('.highlight-change')
+                    .forEach(el => el.classList.remove('highlight-change'));
+
+                if (window.isApprovalMode && window.changedFields.length > 0) {
+                    window.changedFields.forEach(fieldId => {
+                        let el = document.getElementById(fieldId);
+                        if(el) el.classList.add('highlight-change');
+                    });
+                }
+
+                document.getElementById('systemIdDisplay').style.display = 'inline-block';
+                document.getElementById('s_id_val').innerText = d.system_id;
+                document.getElementById('btnSave').style.display = 'none';
+                
+                if(window.isApprovalMode) {
+                    document.getElementById('btnApprove').style.display = 'inline-block';
+                    document.getElementById('btnReject').style.display = 'inline-block';
+
+                    showModal(
+                        "Please Review the Order and Approve or Reject.",
+                        "success"
+                    );
+
+                } else {
+                    document.getElementById('btnUpdate').style.display = 'inline-block';
+                    document.getElementById('btnCopy').style.display = 'inline-block';
+                    document.getElementById('btnHold').style.display = 'inline-block';
+
+                    document.getElementById('modeBadge').innerText = "UPDATE MODE";
+                    document.getElementById('modeBadge').style.background = "#f39c12";
+
+                    showModal(
+                        "Job Data loaded successfully!",
+                        "success"
+                    );
+                }
+
+            } else {
+                showModal(res.message);
+            }
+        });
+}
+
+    function copyAsNew() {
+        document.getElementById('job_sequence').value = "";
+        window.currentSystemId = ""; // Reset SYS ID
+        document.getElementById('systemIdDisplay').style.display = 'none';
+        document.getElementById('s_id_val').innerText = "";
+        document.getElementById('btnUpdate').style.display = 'none';
+        document.getElementById('btnCopy').style.display = 'none';
+        document.getElementById('btnHold').style.display = 'none';
+        document.getElementById('btnSave').style.display = 'inline-block';
+        document.getElementById('modeBadge').innerText = "NEW ENTRY (COPIED)";
+        document.getElementById('modeBadge').style.background = "#007bff";
+        document.getElementById('rejectionBanner').style.display = 'none';
+        showModal("Copied! Job No reset. Modify and Save.", "success");
+    }
+
+    function holdOrder() {
+        fetch('/production/knitting/ajax/order-action/', {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({action: 'hold', system_id: window.currentSystemId})
+        }).then(res=>res.json()).then(data => {
+            if(data.status === 'success') { showModal(data.msg, "success"); setTimeout(()=>location.href=window.location.pathname, 1500); }
+        });
+    }
+
+    function approveOrderFromPage() {
+        fetch('/production/knitting/ajax/order-action/', {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({action: 'approve', system_id: window.currentSystemId})
+        }).then(res=>res.json()).then(data => {
+            if(data.status === 'success') { showModal(data.msg, "success"); setTimeout(()=>location.href='/dashboard/', 1500); }
+        });
+    }
+
+    function openRejectModal() { 
+        document.getElementById('reject-modal').style.visibility = 'visible'; 
+        document.getElementById('reject-modal').style.opacity = '1';
+    }
+
+    function submitReject() {
+        let reason = document.getElementById('reject_reason_text').value.trim();
+        if(!reason) { alert("Please provide a reason for rejection."); return; }
+        
+        fetch('/production/knitting/ajax/order-action/', {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({action: 'reject', system_id: window.currentSystemId, reason: reason})
+        }).then(res=>res.json()).then(data => {
+            if(data.status === 'success') { 
+                document.getElementById('reject-modal').style.visibility = 'hidden';
+                document.getElementById('reject-modal').style.opacity = '0';
+                showModal(data.msg, "success"); setTimeout(()=>location.href='/dashboard/', 1500); 
+            }
+        });
+    }
+
+    function saveKnittingOrder() {
+        if(!document.getElementById('job_sequence').value) { showModal("JOB NO. is missing!"); return; }
+        if(!document.getElementById('m_buyer').value) { showModal("BUYER is missing!"); return; }
+        if(!document.getElementById('m_style').value) { showModal("STYLE is missing!"); return; }
+        if(!document.getElementById('m_po').value) { showModal("PO NUMBER(S) is missing!"); return; }
+        if(!document.getElementById('m_gauge').value) { showModal("GAUGE is missing!"); return; }
+        if(!document.getElementById('m_kcdDate').value) { showModal("KNITTING CLOSING PLAN Date is missing!"); return; }
+        if(!orderData.ops.includes("Body")) { showModal("Mandatory Operation Missing: You must select the 'Body' operation."); return; }
+        if(orderData.colors.length === 0) { showModal("Please add at least one Color!"); return; }
+
+        let hasMatrixError = false;
+        orderData.colors.forEach(c => {
+            if(c.lots.length === 0) { showModal(`Yarn Lot is missing for color: ${c.name}`); hasMatrixError = true; }
+            c.sizes.forEach(sz => {
+                if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasMatrixError = true; }
+                if(!sz.oQty || sz.oQty <= 0) { showModal(`ORDER QTY is required for size: ${sz.name} in color: ${c.name}`); hasMatrixError = true; }
+                if(!sz.sWeight || sz.sWeight <= 0) { showModal(`SIZE WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasMatrixError = true; }
+            });
+        });
+        if(hasMatrixError) return;
+
+        let prefix = document.querySelector('.job-prefix').innerText.replace('-', '');
+        let jobNo = prefix + '-' + document.getElementById('job_year').value + '-' + document.getElementById('job_sequence').value;
+        let poList = document.getElementById('m_po').value.split(',').map(s=>s.trim()).filter(s=>s);
+        let bName = document.getElementById('m_buyer').value.trim();
+
+        let tPlan = parseInt(document.getElementById('sumPlanQty').innerText.replace(/,/g, '')) || 0;
+        let tLbs = parseFloat(document.getElementById('sumTotalLbs').innerText.replace(/,/g, '')) || 0;
+        let avgWtDz = tPlan > 0 ? ((tLbs / tPlan) * 12).toFixed(2) : 0;
+
+        let matrixData = [];
+        let sortIdx = 1;
+        let assignPo = poList[0] || '';
+
+        orderData.colors.forEach(c => {
+            c.sizes.forEach(sz => {
+                if (sz.oQty > 0) {
+                    matrixData.push({ po: assignPo, color: c.name, size: sz.name, qty: sz.oQty, sort: sortIdx++ });
+                }
+            });
+        });
+
+        let payload = {
+            system_id: window.currentSystemId,
+            job_no: jobNo, buyer_name: bName, style_no: document.getElementById('m_style').value, po_list: poList.join(', '),
+            plan_pct: parseInt(document.getElementById('m_planPct').value) || 0, gauge: document.getElementById('m_gauge').value,
+            kcd_date: document.getElementById('m_kcdDate').value, operations: orderData.ops.join(', '),
+            total_color: parseInt(document.getElementById('sumColor').innerText), total_lot: parseInt(document.getElementById('sumLot').innerText),
+            total_size: parseInt(document.getElementById('sumSize').innerText), total_order_qty: parseInt(document.getElementById('sumOrdQty').innerText.replace(/,/g, '')),
+            total_plan_qty: tPlan, total_lbs: tLbs, avg_wt: avgWtDz,
+            colors: orderData.colors.map(c => ({ name: c.name, lots: c.lots.join(', '), sizes: c.sizes })),
+            matrix_data: matrixData
+        };
+
+        fetch("{% url 'save_knitting_order_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                showModal(`Order Saved Successfully!\nSystem ID: ${data.sys_id}`, "success");
+                setTimeout(() => window.location.href = window.location.pathname, 2000);
+            } else { showModal("Error: " + data.message); }
+        });
+    }
+</script>
+{% endblock %}
