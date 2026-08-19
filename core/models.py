@@ -92,3 +92,14 @@ class KnittingSize(models.Model):
     size_wt_gm = models.IntegerField(default=0)
     total_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     sort_order = models.IntegerField(default=0)
+
+    # --- HR Admin Models ---
+class Operator(models.Model):
+    operator_id = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=150)
+    section = models.CharField(max_length=100, default='Knitting')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.operator_id} - {self.name}"

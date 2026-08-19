@@ -5,3 +5,4 @@ from .notification_views import *
 
 # Production Department Views
 from .production.knitting_order_entry import *
+from .operator_views import *

@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% block title %}Operator Entry - {{ factory_name }}{% endblock %}
+{% block page_title %}OPERATOR ENTRY{% endblock %}
+
+{% block content %}
+<!-- Include SheetJS for Excel Import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+    .entry-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
+    .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;}
+    
+    .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;}
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; font-size: 12.5px;}
+    body.dark-mode .form-group label { color: #ecf0f1; }
+    .form-group label span { color: #e74c3c; }
+    .form-control { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); transition: 0.2s; height: 35px; box-sizing: border-box;}
+    .form-control:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+    
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);}
+    .btn-action { padding: 8px 20px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;}
+    .btn-save { background: #27ae60; } .btn-update { background: #2980b9; } .btn-clear { background: #7f8c8d; }
+    .btn-excel { background: #207347; } .btn-danger { background: #e74c3c; }
+    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+    /* Live Summary Cards */
+    .summary-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
+    .summary-card { background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; min-width: 140px; text-align: center; }
+    .summary-card h4 { margin: 0 0 5px 0; font-size: 13px; color: var(--main-text); text-transform: uppercase;}
+    .summary-card .stats { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;}
+    .stats .act { color: #27ae60; } .stats .inact { color: #e74c3c; }
+
+    /* Table & Filter Styling */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px;}
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 13px; color: var(--main-text);}
+    th { background: rgba(0,0,0,0.05); font-weight: 600;}
+    tr:hover { background: rgba(0,0,0,0.02); }
+    .filter-input { width: 90%; padding: 4px; margin-top: 5px; font-size: 11px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
+    
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+    .status-active { background: rgba(39, 174, 96, 0.1); color: #27ae60; border: 1px solid #27ae60;}
+    .status-inactive { background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c;}
+    
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 15px; margin: 0 5px; transition: 0.2s; }
+    .btn-edit { color: #2980b9; } .btn-del { color: #e74c3c; }
+
+    .autocomplete-wrapper { position: relative; width: 100%; }
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: var(--card-bg); border: 1px solid #007bff; max-height: 150px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+    .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color);}
+    .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
+
+    /* Custom Delete Modal */
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: 0.3s; }
+    .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+</style>
+
+<!-- Live Summary Section -->
+{% if summary %}
+<div class="summary-container">
+    {% for s in summary %}
+    <div class="summary-card">
+        <h4><i class="fa-solid fa-users" style="color:#007bff;"></i> {{ s.section }}</h4>
+        <div class="stats">
+            <span class="act">Active: {{ s.active }}</span>
+            <span class="inact">Inactive: {{ s.inactive }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Form Section -->
+<div class="entry-card">
+    <div class="form-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-user-tie" style="font-size: 20px; color: #007bff;"></i>
+            <div>
+                <h2 style="margin: 0; font-size: 18px;">OPERATOR ENTRY</h2>
+                <span style="font-size: 11px; color:#777;">Fast Keyboard Nav: Press Enter to move and Save</span>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="op_id" value="">
+
+    <div class="grid-row">
+        <div class="form-group">
+            <label>OPERATOR ID <span style="color:#e74c3c;">*</span></label>
+            <input type="text" id="op_operator_id" class="form-control fast-nav" placeholder="e.g. OP-1001" autocomplete="off" autofocus>
+        </div>
+        <div class="form-group">
+            <label>OPERATOR NAME <span style="color:#e74c3c;">*</span></label>
+            <input type="text" id="op_name" class="form-control fast-nav" placeholder="Full Name" autocomplete="off">
+        </div>
+        <div class="form-group autocomplete-wrapper">
+            <label>SECTION <span style="color:#e74c3c;">*</span></label>
+            <input type="text" id="op_section" class="form-control fast-nav" value="{{ sections.0 }}" placeholder="Select Section" readonly style="cursor:pointer; background:#fff;" onclick="showSections()" onfocus="showSections()">
+            <div id="sectionList" class="autocomplete-list"></div>
+        </div>
+        <div class="form-group">
+            <label>STATUS</label>
+            <select id="op_status" class="form-control fast-nav">
+                <option value="true">Active</option>
+                <option value="false">Inactive / Left</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <div>
+            <!-- Excel Import Tool -->
+            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleExcelUpload(event)">
+            <button class="btn-action btn-excel" onclick="document.getElementById('excelFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-action btn-clear" onclick="clearForm()"><i class="fa-solid fa-rotate-right"></i> Clear</button>
+            <button class="btn-action btn-update" id="btnUpdate" style="display:none;" onclick="saveOperator()"><i class="fa-solid fa-pen-to-square"></i> Update</button>
+            <button class="btn-action btn-save" id="btnSave" onclick="saveOperator()"><i class="fa-solid fa-check"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Table Section -->
+<div class="entry-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <span style="font-weight: bold; font-size: 14px; color: #2c3e50;"><i class="fa-solid fa-list"></i> REGISTERED OPERATORS</span>
+        <button class="btn-action btn-danger" style="padding: 5px 15px; font-size:12px;" onclick="confirmBulkDelete()"><i class="fa-solid fa-trash-can"></i> Delete Selected</button>
+    </div>
+    
+    <div style="overflow-x: auto; max-height: 500px;">
+        <table id="operatorTable">
+            <thead style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th width="5%"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
+                    <th width="20%">OPERATOR ID<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(1, this.value)"></th>
+                    <th width="30%">OPERATOR NAME<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(2, this.value)"></th>
+                    <th width="20%">SECTION<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(3, this.value)"></th>
+                    <th width="10%">STATUS</th>
+                    <th width="15%">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in operators %}
+                <tr class="data-row">
+                    <td><input type="checkbox" class="row-check" value="{{ op.id }}"></td>
+                    <td style="font-weight: bold; color: #007bff;">{{ op.operator_id }}</td>
+                    <td>{{ op.name }}</td>
+                    <td>{{ op.section }}</td>
+                    <td>
+                        {% if op.is_active %}<span class="status-badge status-active">Active</span>{% else %}<span class="status-badge status-inactive">Inactive</span>{% endif %}
+                    </td>
+                    <td>
+                        <button class="btn-icon btn-edit" onclick="editOperator('{{ op.id }}', '{{ op.operator_id|escapejs }}', '{{ op.name|escapejs }}', '{{ op.section|escapejs }}', '{{ op.is_active|lower }}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon btn-del" onclick="showDeleteModal('{{ op.id }}', '{{ op.name|escapejs }}')"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="noDataRow"><td colspan="6" style="color: #7f8c8d; font-style: italic;">No operators found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Custom Delete Modal -->
+<div id="deleteModal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #e74c3c; margin-bottom: 10px;"></i>
+        <h3 style="margin-bottom: 10px; color:#2c3e50;">Confirm Deletion</h3>
+        <p id="deleteModalText" style="font-size: 14px; color:#7f8c8d; margin-bottom: 20px;">Are you sure?</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn-action btn-clear" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-action btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const dbSections = JSON.parse('{{ sections_json|escapejs }}');
+    let secFocus = -1;
+    let deleteIdTarget = null;
+    let bulkDeleteTarget = false;
+
+    // --- Fast Keyboard Navigation ---
+    document.addEventListener('keydown', function(e) {
+        if (e.target.id === 'op_section') {
+            let list = document.getElementById("sectionList"); let items = list ? list.getElementsByTagName("div") : null;
+            if (e.key === 'ArrowDown') { e.preventDefault(); secFocus++; secFocus = addActive(items, secFocus); return; }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); secFocus--; secFocus = addActive(items, secFocus); return; }
+            else if (e.key === 'Enter') { e.preventDefault(); if (secFocus > -1 && items) { items[secFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
+        }
+
+        if(e.key === 'Enter' && e.target.classList.contains('fast-nav')) {
+            e.preventDefault();
+            let navs = Array.from(document.querySelectorAll('.fast-nav'));
+            let idx = navs.indexOf(e.target);
+            if (idx > -1 && idx < navs.length - 1) { 
+                navs[idx + 1].focus(); 
+            } else if (idx === navs.length - 1) { 
+                saveOperator(); // Save on last Enter
+            }
+        }
+    });
+
+    function addActive(x, currentFocus) {
+        if (!x) return false;
+        for (var i = 0; i < x.length; i++) x[i].classList.remove("active");
+        if (currentFocus >= x.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (x.length - 1);
+        x[currentFocus].classList.add("active");
+        x[currentFocus].scrollIntoView({block: "nearest"});
+        return currentFocus;
+    }
+
+    // --- Dynamic Section Dropdown ---
+    function showSections() {
+        secFocus = -1;
+        let list = document.getElementById('sectionList'); list.innerHTML = "";
+        dbSections.forEach(s => {
+            let div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerText = s;
+            div.onmousedown = () => { document.getElementById('op_section').value = s; list.style.display = 'none'; document.getElementById('op_status').focus(); };
+            list.appendChild(div);
+        });
+        list.style.display = 'block';
+    }
+    document.getElementById('op_section').addEventListener('blur', function() { setTimeout(() => { document.getElementById("sectionList").style.display = "none"; }, 150); });
+
+    // --- Core Functions ---
+    function clearForm() {
+        document.getElementById('op_id').value = '';
+        document.getElementById('op_operator_id').value = '';
+        document.getElementById('op_name').value = '';
+        document.getElementById('op_section').value = dbSections.length > 0 ? dbSections[0] : '';
+        document.getElementById('op_status').value = 'true';
+        document.getElementById('btnSave').style.display = 'inline-block';
+        document.getElementById('btnUpdate').style.display = 'none';
+        document.getElementById('op_operator_id').focus();
+    }
+
+    function editOperator(id, opId, name, section, isActive) {
+        document.getElementById('op_id').value = id;
+        document.getElementById('op_operator_id').value = opId;
+        document.getElementById('op_name').value = name;
+        document.getElementById('op_section').value = section;
+        document.getElementById('op_status').value = isActive;
+        document.getElementById('btnSave').style.display = 'none';
+        document.getElementById('btnUpdate').style.display = 'inline-block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function saveOperator() {
+        let id = document.getElementById('op_id').value;
+        let opId = document.getElementById('op_operator_id').value.trim();
+        let name = document.getElementById('op_name').value.trim();
+        let section = document.getElementById('op_section').value.trim();
+        let isActive = document.getElementById('op_status').value === 'true';
+
+        if(!opId || !name) { showModal("Operator ID and Name are required!"); return; }
+
+        fetch("{% url 'save_operator_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({ id: id, operator_id: opId, name: name, section: section, is_active: isActive })
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                clearForm();
+                showModal(data.message, "success");
+                setTimeout(() => location.reload(), 1000);
+            } else { showModal("Error: " + data.message); }
+        });
+    }
+
+    // --- Modal Delete Logic ---
+    function showDeleteModal(id, name) {
+        bulkDeleteTarget = false; deleteIdTarget = id;
+        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete operator: <b>${name}</b>?`;
+        document.getElementById('deleteModal').style.visibility = 'visible';
+        document.getElementById('deleteModal').style.opacity = '1';
+        document.getElementById('confirmDeleteBtn').onclick = executeSingleDelete;
+    }
+    
+    function confirmBulkDelete() {
+        let selected = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.value);
+        if(selected.length === 0) { showModal("Please select at least one operator to delete."); return; }
+        bulkDeleteTarget = true; deleteIdTarget = selected;
+        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete <b>${selected.length}</b> selected operators?`;
+        document.getElementById('deleteModal').style.visibility = 'visible';
+        document.getElementById('deleteModal').style.opacity = '1';
+        document.getElementById('confirmDeleteBtn').onclick = executeBulkDelete;
+    }
+
+    function closeDeleteModal() { document.getElementById('deleteModal').style.visibility = 'hidden'; document.getElementById('deleteModal').style.opacity = '0'; }
+
+    function executeSingleDelete() {
+        fetch("{% url 'delete_operator_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({id: deleteIdTarget})
+        }).then(res => res.json()).then(data => {
+            closeDeleteModal();
+            if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
+            else { showModal("Warning: " + data.message); }
+        });
+    }
+
+    function executeBulkDelete() {
+        fetch("{% url 'bulk_delete_operator_ajax' %}", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({ids: deleteIdTarget})
+        }).then(res => res.json()).then(data => {
+            closeDeleteModal();
+            if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1500); } 
+            else { showModal("Warning: " + data.message); }
+        });
+    }
+
+    // --- Table Filtering & Checkboxes ---
+    function filterTable(colIndex, query) {
+        query = query.toLowerCase();
+        let rows = document.querySelectorAll('.data-row');
+        rows.forEach(row => {
+            let text = row.cells[colIndex].innerText.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    function toggleAll(source) {
+        let checkboxes = document.querySelectorAll('.row-check');
+        checkboxes.forEach(cb => {
+            if(cb.closest('tr').style.display !== 'none') { cb.checked = source.checked; }
+        });
+    }
+
+    // --- Excel Import Logic (SheetJS) ---
+    function handleExcelUpload(e) {
+        let file = e.target.files[0];
+        if(!file) return;
+        
+        let reader = new FileReader();
+        reader.onload = function(evt) {
+            let data = new Uint8Array(evt.target.result);
+            let workbook = XLSX.read(data, {type: 'array'});
+            let sheetName = workbook.SheetNames[0];
+            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1, range: 1}); // Skip header
+            
+            let payload = json.map(row => ({
+                operator_id: row[0],
+                name: row[1],
+                section: row[2] || dbSections[0], // Default to first setting section if empty
+                status: row[3] || 'Active'
+            })).filter(r => r.operator_id && r.name); // Ignore empty rows
+            
+            if(payload.length === 0) { showModal("No valid data found in Excel!"); return; }
+
+            showModal(`Processing ${payload.length} records. Please wait...`, "success");
+            
+            fetch("{% url 'bulk_save_operator_ajax' %}", {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+                body: JSON.stringify({operators: payload})
+            }).then(res => res.json()).then(data => {
+                if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 2000); } 
+                else { showModal("Error: " + data.message); }
+            });
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = ""; // Reset input
+    }
+</script>
+{% endblock %}

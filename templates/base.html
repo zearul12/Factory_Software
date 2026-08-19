@@ -122,15 +122,14 @@
         </div>
         <div class="submenu"><a href="#">General Store</a><a href="#">Yarn Store</a></div>
 
+        <!-- 4. HR Admin & Accounts -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
-            <div class="nav-item-left"><i class="fa-solid fa-users-gear icon" style="color: #4cd137;"></i> <span>HR-Admin & Accounts</span></div>
+            <div class="nav-item-left"><i class="fa-solid fa-users-cog icon" style="color: #27ae60;"></i> <span>HR-Admin & Accounts</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu">
-            <a href="{% url 'knit_machine_entry' %}">Knit. Machine Entry</a>
-            {% if request.user.is_superuser %}
-            <a href="{% url 'user_management' %}">User Management</a>
-            {% endif %}
+            <a href="{% url 'knit_machine_entry' %}"><i class="fa-solid fa-cogs" style="margin-right: 5px;"></i> Knit Machine Entry</a>
+            <a href="{% url 'operator_entry' %}"><i class="fa-solid fa-user-tie" style="margin-right: 5px;"></i> Operator Entry</a>
         </div>
 
         <div class="nav-item" onclick="toggleSubmenu(this)">
