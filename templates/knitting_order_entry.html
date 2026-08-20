@@ -65,7 +65,7 @@
     .btn-danger { background: #e74c3c; }
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-    /* PERFECT POSITIONING FIX FOR DROPDOWNS */
+    .autocomplete-wrapper { position: relative; width: 100%; }
     .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: var(--card-bg); border: 1px solid #007bff; max-height: 200px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
     .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
@@ -75,16 +75,15 @@
 </style>
 
 <div id="order-master">
-    <div id="rejectionBanner" style="display:none; padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: bold; font-size: 14px; text-align: center; background: #ffebee; color: #c62828; border: 1px dashed #e74c3c;"></div>
     <!-- Main Entry Card -->
     <div class="entry-card">
         <div class="form-header">
-            <div style="flex: 1; max-width: 500px;">
-                <div style="position: relative; width: 100%;">
-                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: #007bff; z-index: 10;"></i>
+            <div class="autocomplete-wrapper" style="flex: 1; max-width: 500px;">
+                <div style="position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: #007bff;"></i>
                     <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Advanced Search (Job, Buyer, Style, Color or PO)..." oninput="searchGlobalJob(this.value)" autocomplete="off">
-                    <div id="globalJobSearchList" class="autocomplete-list"></div>
                 </div>
+                <div id="globalJobSearchList" class="autocomplete-list"></div>
             </div>
             
             <div>
@@ -93,6 +92,8 @@
                 <span class="badge" id="modeBadge">NEW ENTRY</span>
             </div>
         </div>
+
+        <div id="rejectionBanner" style="display:none; padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: bold; font-size: 14px; text-align: center; background: #ffebee; color: #c62828; border: 1px dashed #e74c3c;"></div>
 
         <div class="grid-row">
             <div class="form-group">
@@ -104,12 +105,10 @@
                     <input type="text" id="job_sequence" class="job-input fast-nav" placeholder="00000" maxlength="5" style="border-radius: 0 4px 4px 0;" onblur="padJobSeq(this)" autofocus>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group autocomplete-wrapper">
                 <label>BUYER <span style="color:#e74c3c;">*</span></label>
-                <div style="position: relative; width: 100%;">
-                    <input type="text" id="m_buyer" class="form-control fast-nav" placeholder="Type & Select" oninput="suggestBuyer()" autocomplete="off" onblur="validateBuyerWithDelay()">
-                    <div id="buyerList" class="autocomplete-list"></div>
-                </div>
+                <input type="text" id="m_buyer" class="form-control fast-nav" placeholder="Type & Select" oninput="suggestBuyer()" autocomplete="off" onblur="validateBuyerWithDelay()">
+                <div id="buyerList" class="autocomplete-list"></div>
             </div>
             <div class="form-group">
                 <label>STYLE <span style="color:#e74c3c;">*</span></label>
@@ -127,12 +126,10 @@
                     <label>PLAN % <span style="color:#e74c3c;">*</span></label>
                     <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;">
                 </div>
-                <div class="form-group" style="flex: 1;">
+                <div class="form-group autocomplete-wrapper" style="flex: 1;">
                     <label>GAUGE <span style="color:#e74c3c;">*</span></label>
-                    <div style="position: relative; width: 100%;">
-                        <input type="text" id="m_gauge" class="form-control fast-nav" placeholder="Select" autocomplete="off" readonly style="cursor: pointer; background: #fff;" onclick="showGauges()" onfocus="showGauges()">
-                        <div id="gaugeList" class="autocomplete-list"></div>
-                    </div>
+                    <input type="text" id="m_gauge" class="form-control fast-nav" placeholder="Select" autocomplete="off" readonly style="cursor: pointer; background: #fff;" onclick="showGauges()" onfocus="showGauges()">
+                    <div id="gaugeList" class="autocomplete-list"></div>
                 </div>
             </div>
             
@@ -206,13 +203,15 @@
                 
                 <table>
                     <thead>
+                        <!-- Updated Matrix Headers -->
                         <tr>
                             <th width="5%">#</th>
-                            <th width="20%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
-                            <th width="15%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
-                            <th width="15%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
+                            <th width="15%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
+                            <th width="12%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
+                            <th width="13%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
                             <th width="15%">SIZE WT (gm) <span style="color:#e74c3c;">*</span></th>
-                            <th width="15%">TOTAL (Lbs)</th>
+                            <th width="12%">TOTAL (Lbs)</th>
+                            <th width="13%">BUNDLE QTY</th>
                             <th width="15%">ACTION</th>
                         </tr>
                     </thead>
@@ -223,7 +222,6 @@
         </div>
     </div>
 
-    <!-- Action Bar -->
     <div class="action-bar">
         <button class="btn-action btn-new" id="btnSave" onclick="saveKnittingOrder()"><i class="fa-solid fa-paper-plane"></i> Save & Submit</button>
         <button class="btn-action btn-update" id="btnUpdate" style="display:none;" onclick="saveKnittingOrder()"><i class="fa-solid fa-pen-to-square"></i> Update Order</button>
@@ -249,7 +247,7 @@
 <script>
     window.isApprovalMode = false;
     window.changedFields = [];
-    window.currentSystemId = ""; // System ID for updates
+    window.currentSystemId = "";
 
     const dbBuyers = JSON.parse('{{ buyers_json|escapejs }}');
     const dbGauges = JSON.parse('{{ gauges_json|escapejs }}');
@@ -302,30 +300,21 @@
             let list = document.getElementById("globalJobSearchList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); searchFocus++; searchFocus = addActive(items, searchFocus); return; }
             else if (e.key === 'ArrowUp') { e.preventDefault(); searchFocus--; searchFocus = addActive(items, searchFocus); return; }
-            else if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                if (searchFocus > -1 && items) { items[searchFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
-            }
+            else if (e.key === 'Enter') { e.preventDefault(); if (searchFocus > -1 && items) { items[searchFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
         if (e.target.id === 'm_buyer') {
             let list = document.getElementById("buyerList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); buyerFocus++; buyerFocus = addActive(items, buyerFocus); return; }
             else if (e.key === 'ArrowUp') { e.preventDefault(); buyerFocus--; buyerFocus = addActive(items, buyerFocus); return; }
-            else if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                if (buyerFocus > -1 && items) { items[buyerFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
-            }
+            else if (e.key === 'Enter') { e.preventDefault(); if (buyerFocus > -1 && items) { items[buyerFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
         
         if (e.target.id === 'm_gauge') {
             let list = document.getElementById("gaugeList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); gaugeFocus++; gaugeFocus = addActive(items, gaugeFocus); return; }
             else if (e.key === 'ArrowUp') { e.preventDefault(); gaugeFocus--; gaugeFocus = addActive(items, gaugeFocus); return; }
-            else if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                if (gaugeFocus > -1 && items) { items[gaugeFocus].dispatchEvent(new MouseEvent('mousedown')); return; } 
-            }
+            else if (e.key === 'Enter') { e.preventDefault(); if (gaugeFocus > -1 && items) { items[gaugeFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
         if(e.key === 'Enter') {
@@ -338,6 +327,7 @@
                 else if (idx === navs.length - 1) { document.getElementById('fastColorInput').focus(); }
             }
             
+            // Matrix Navigation Logic Updated for Bundle
             if (e.target.classList.contains('matrix-qty')) {
                 e.preventDefault(); 
                 let qtys = Array.from(document.querySelectorAll('.matrix-qty'));
@@ -353,6 +343,18 @@
                 let wts = Array.from(document.querySelectorAll('.matrix-wt'));
                 let idx = wts.indexOf(e.target); 
                 if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
+                else if (idx === wts.length - 1) {
+                    // Jump from last WT to first Bundle QTY
+                    let firstBndl = document.querySelector('.matrix-bundle');
+                    if(firstBndl) { firstBndl.focus(); firstBndl.select(); }
+                }
+            }
+            if (e.target.classList.contains('matrix-bundle')) {
+                e.preventDefault(); 
+                let bndls = Array.from(document.querySelectorAll('.matrix-bundle'));
+                let idx = bndls.indexOf(e.target); 
+                // Jump from current Bundle to next Bundle
+                if (idx > -1 && idx < bndls.length - 1) { bndls[idx + 1].focus(); bndls[idx + 1].select(); }
             }
         }
     });
@@ -490,7 +492,8 @@
         if(!f || !actColId) return; 
         let c = orderData.colors.find(x => x.id === actColId); 
         let sizesArr = f === 'empty' ? [''] : sizeTemplates[f];
-        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, sWeight: "", lbs: 0, sort: 1 })); 
+        // ADDED bundleQty initialization
+        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, sWeight: "", lbs: 0, bundleQty: "", sort: 1 })); 
         renderSizes(c); calcAll(); 
         setTimeout(() => { let firstQty = document.querySelector('.matrix-qty'); if(firstQty) firstQty.focus(); }, 100);
     }
@@ -501,18 +504,28 @@
             let safeSName = s.name.replace(/\s+/g, '_');
             let qId = `qty_${safeCName}_${safeSName}`;
             let wId = `wt_${safeCName}_${safeSName}`;
+            let bId = `bndl_${safeCName}_${safeSName}`; // Highlight tracking for Bundle
             
             let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : '';
             let wHi = (window.isApprovalMode && window.changedFields.includes(wId)) ? 'highlight-change' : '';
+            let bHi = (window.isApprovalMode && window.changedFields.includes(bId)) ? 'highlight-change' : '';
             
             return `
             <tr>
                 <td>${i+1}</td>
                 <td><input type="text" class="td-input" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
+                
                 <td><input type="text" id="${qId}" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
+                
                 <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
+                
                 <td><input type="text" id="${wId}" class="td-input matrix-wt ${wHi}" value="${s.sWeight}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateWt('${s.id}', this.value)"></td>
+                
                 <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
+                
+                <!-- NEW: Bundle QTY Column -->
+                <td><input type="text" id="${bId}" class="td-input matrix-bundle ${bHi}" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
+                
                 <td>
                     <button class="btn-circle btn-plus" style="margin-right:10px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
                     <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
@@ -523,9 +536,10 @@
     
     function updateSzName(id, val) { orderData.colors.find(x => x.id === actColId).sizes.find(x => x.id === id).name = val; }
     function delSz(id) { let c = orderData.colors.find(x => x.id === actColId); c.sizes = c.sizes.filter(s => s.id !== id); renderSizes(c); calcAll(); }
-    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, sWeight: "", lbs: 0, sort: 1}); renderSizes(c); calcAll(); }
+    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, sWeight: "", lbs: 0, bundleQty: "", sort: 1}); renderSizes(c); calcAll(); }
     function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); }
     function updateWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.sWeight = parseInt(val) || 0; calcAll(); }
+    function updateBundle(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bundleQty = val ? parseInt(val) : ""; }
     
     function calcAll() { 
         let pct = parseFloat(document.getElementById('m_planPct').value) || 0; 
@@ -573,36 +587,18 @@
                     <td style="color:#27ae60; font-size:14px;">${tablePlan}</td>
                     <td style="color:#007bff;">Avg (Lbs/Dz): <br><span style="font-size:14px;">${avgDzWt}</span></td>
                     <td style="color:#e74c3c; font-size:14px;">${tableLbs}</td>
-                    <td></td>
+                    <td colspan="2"></td>
                 </tr>
             `;
         }
     }
 
     function loadOrderDetails(sys_id) {
-    fetch(`/production/knitting/ajax/get-order/${sys_id}/`)
+        fetch(`/production/knitting/ajax/get-order/${sys_id}/`)
         .then(res => res.json())
         .then(res => {
             if(res.status === 'success') {
                 let d = res.data;
-
-                // --- Rejection Banner Logic ---
-                let rBanner = document.getElementById('rejectionBanner');
-
-                if (d.status === 'Rejected') {
-                    rBanner.style.display = 'block';
-                    rBanner.innerHTML = `
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <b>THIS ORDER WAS REJECTED!</b>
-                        <br>
-                        <span style="font-weight:normal; font-size:13px; color:#555; display:block; margin-top:5px;">
-                            Reason: ${d.reject_reason || "No reason provided."}
-                        </span>
-                    `;
-                } else {
-                    rBanner.style.display = 'none';
-                }
-
                 window.changedFields = d.changed_fields || [];
                 window.currentSystemId = d.system_id;
                 
@@ -616,51 +612,23 @@
                 document.getElementById('m_gauge').value = d.gauge;
                 document.getElementById('m_kcdDate').value = d.kcd_date;
                 
-                orderData.ops = d.operations 
-                    ? d.operations.split(',').map(s => s.trim()) 
-                    : [];
-
+                orderData.ops = d.operations ? d.operations.split(',').map(s=>s.trim()) : [];
                 renderOps();
 
                 orderData.colors = [];
-
                 d.colors.forEach(c => {
-                    let col = {
-                        id: generateId(),
-                        name: c.name,
-                        lots: c.lots 
-                            ? c.lots.split(',').map(s => s.trim()) 
-                            : [],
-                        sizes: [],
-                        totalLbs: 0
-                    };
-
+                    let col = { id: generateId(), name: c.name, lots: c.lots ? c.lots.split(',').map(s=>s.trim()) : [], sizes: [], totalLbs: 0 };
                     c.sizes.forEach(sz => {
-                        col.sizes.push({
-                            id: generateId(),
-                            name: sz.name,
-                            oQty: sz.oQty,
-                            pQty: sz.pQty,
-                            sWeight: sz.sWeight,
-                            lbs: parseFloat(sz.lbs),
-                            sort: 1
-                        });
+                        // LOAD BUNDLE QTY
+                        col.sizes.push({ id: generateId(), name: sz.name, oQty: sz.oQty, pQty: sz.pQty, sWeight: sz.sWeight, lbs: parseFloat(sz.lbs), bundleQty: sz.bundleQty || "", sort: 1 });
                     });
-
                     orderData.colors.push(col);
                 });
                 
-                actColId = orderData.colors.length > 0 
-                    ? orderData.colors[0].id 
-                    : null;
+                actColId = orderData.colors.length > 0 ? orderData.colors[0].id : null;
+                renderColors(); openRight(); calcAll();
 
-                renderColors();
-                openRight();
-                calcAll();
-
-                document.querySelectorAll('.highlight-change')
-                    .forEach(el => el.classList.remove('highlight-change'));
-
+                document.querySelectorAll('.highlight-change').forEach(el => el.classList.remove('highlight-change'));
                 if (window.isApprovalMode && window.changedFields.length > 0) {
                     window.changedFields.forEach(fieldId => {
                         let el = document.getElementById(fieldId);
@@ -672,34 +640,27 @@
                 document.getElementById('s_id_val').innerText = d.system_id;
                 document.getElementById('btnSave').style.display = 'none';
                 
+                let rBanner = document.getElementById('rejectionBanner');
+                if(d.status === 'Rejected') {
+                    rBanner.style.display = 'block';
+                    rBanner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <b>THIS ORDER WAS REJECTED!</b><br><span style="font-weight:normal; font-size:13px; color:#555; display:block; margin-top:5px;">Reason: ${d.reject_reason || "No reason provided."}</span>`;
+                } else { rBanner.style.display = 'none'; }
+
                 if(window.isApprovalMode) {
                     document.getElementById('btnApprove').style.display = 'inline-block';
                     document.getElementById('btnReject').style.display = 'inline-block';
-
-                    showModal(
-                        "Please Review the Order and Approve or Reject.",
-                        "success"
-                    );
-
+                    showModal("Please Review the Order and Approve or Reject.", "success");
                 } else {
                     document.getElementById('btnUpdate').style.display = 'inline-block';
                     document.getElementById('btnCopy').style.display = 'inline-block';
                     document.getElementById('btnHold').style.display = 'inline-block';
-
                     document.getElementById('modeBadge').innerText = "UPDATE MODE";
                     document.getElementById('modeBadge').style.background = "#f39c12";
-
-                    showModal(
-                        "Job Data loaded successfully!",
-                        "success"
-                    );
+                    showModal("Job Data loaded successfully!", "success");
                 }
-
-            } else {
-                showModal(res.message);
-            }
+            } else { showModal(res.message); }
         });
-}
+    }
 
     function copyAsNew() {
         document.getElementById('job_sequence').value = "";
@@ -710,9 +671,9 @@
         document.getElementById('btnCopy').style.display = 'none';
         document.getElementById('btnHold').style.display = 'none';
         document.getElementById('btnSave').style.display = 'inline-block';
+        document.getElementById('rejectionBanner').style.display = 'none';
         document.getElementById('modeBadge').innerText = "NEW ENTRY (COPIED)";
         document.getElementById('modeBadge').style.background = "#007bff";
-        document.getElementById('rejectionBanner').style.display = 'none';
         showModal("Copied! Job No reset. Modify and Save.", "success");
     }
 
@@ -785,18 +746,6 @@
         let tLbs = parseFloat(document.getElementById('sumTotalLbs').innerText.replace(/,/g, '')) || 0;
         let avgWtDz = tPlan > 0 ? ((tLbs / tPlan) * 12).toFixed(2) : 0;
 
-        let matrixData = [];
-        let sortIdx = 1;
-        let assignPo = poList[0] || '';
-
-        orderData.colors.forEach(c => {
-            c.sizes.forEach(sz => {
-                if (sz.oQty > 0) {
-                    matrixData.push({ po: assignPo, color: c.name, size: sz.name, qty: sz.oQty, sort: sortIdx++ });
-                }
-            });
-        });
-
         let payload = {
             system_id: window.currentSystemId,
             job_no: jobNo, buyer_name: bName, style_no: document.getElementById('m_style').value, po_list: poList.join(', '),
@@ -805,8 +754,7 @@
             total_color: parseInt(document.getElementById('sumColor').innerText), total_lot: parseInt(document.getElementById('sumLot').innerText),
             total_size: parseInt(document.getElementById('sumSize').innerText), total_order_qty: parseInt(document.getElementById('sumOrdQty').innerText.replace(/,/g, '')),
             total_plan_qty: tPlan, total_lbs: tLbs, avg_wt: avgWtDz,
-            colors: orderData.colors.map(c => ({ name: c.name, lots: c.lots.join(', '), sizes: c.sizes })),
-            matrix_data: matrixData
+            colors: orderData.colors.map(c => ({ name: c.name, lots: c.lots.join(', '), sizes: c.sizes }))
         };
 
         fetch("{% url 'save_knitting_order_ajax' %}", {

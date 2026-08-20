@@ -91,6 +91,7 @@ class KnittingSize(models.Model):
     plan_qty = models.IntegerField(default=0)
     size_wt_gm = models.IntegerField(default=0)
     total_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    bundle_qty = models.IntegerField(default=0, blank=True, null=True)
     sort_order = models.IntegerField(default=0)
 
     # --- HR Admin Models ---

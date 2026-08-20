@@ -82,6 +82,7 @@ def save_knitting_order_ajax(request):
                             s_safe = s.size_name.replace(' ', '_')
                             old_sizes[f"qty_{c_safe}_{s_safe}"] = s.order_qty
                             old_sizes[f"wt_{c_safe}_{s_safe}"] = s.size_wt_gm
+                            old_sizes[f"bndl_{c_safe}_{s_safe}"] = s.bundle_qty # Track Bundle
 
                 for c in data['colors']:
                     c_safe = c['name'].replace(' ', '_')
@@ -89,8 +90,10 @@ def save_knitting_order_ajax(request):
                         s_safe = s['name'].replace(' ', '_')
                         q_key = f"qty_{c_safe}_{s_safe}"
                         w_key = f"wt_{c_safe}_{s_safe}"
+                        b_key = f"bndl_{c_safe}_{s_safe}"
                         if q_key not in old_sizes or str(old_sizes[q_key]) != str(s['oQty']): changed.append(q_key)
                         if w_key not in old_sizes or str(old_sizes[w_key]) != str(s['sWeight']): changed.append(w_key)
+                        if b_key not in old_sizes or str(old_sizes.get(b_key, '0') or '0') != str(s.get('bundleQty') or '0'): changed.append(b_key)
                 
                 if len(changed) == 0:
                     return JsonResponse({'status': 'error', 'message': 'No changes detected! Please modify at least one field to update.'})
@@ -125,8 +128,14 @@ def save_knitting_order_ajax(request):
                 col_obj = KnittingColor.objects.create(order=order, color_name=col_data['name'], lots=col_data['lots'])
                 for sz_data in col_data['sizes']:
                     KnittingSize.objects.create(
-                        color=col_obj, size_name=sz_data['name'], order_qty=sz_data['oQty'],
-                        plan_qty=sz_data['pQty'], size_wt_gm=sz_data['sWeight'], total_lbs=sz_data['lbs'], sort_order=sz_data['sort']
+                        color=col_obj, 
+                        size_name=sz_data['name'], 
+                        order_qty=sz_data['oQty'],
+                        plan_qty=sz_data['pQty'], 
+                        size_wt_gm=sz_data['sWeight'], 
+                        total_lbs=sz_data['lbs'], 
+                        bundle_qty=int(sz_data.get('bundleQty') or 0), # Save Bundle Qty
+                        sort_order=sz_data['sort']
                     )
 
             approvers = list(PageApprover.objects.filter(page_name__icontains="Knitting").values_list('user_id', flat=True))
@@ -152,9 +161,9 @@ def get_knitting_order_details_ajax(request, sys_id):
             'style_no': order.style_no, 'po_numbers': order.po_numbers, 'plan_pct': order.plan_pct, 'gauge': order.gauge,
             'kcd_date': order.kcd_date.strftime('%Y-%m-%d') if order.kcd_date else '',
             'operations': order.operations, 'status': order.status, 
-            'reject_reason': order.reject_reason, # <-- ডাটাবেজ থেকে রিজেকশনের কারণ পাঠানো হচ্ছে
+            'reject_reason': order.reject_reason,
             'changed_fields': order.changed_fields.split(',') if order.changed_fields else [],
-            'colors': [{'name': c.color_name, 'lots': c.lots, 'sizes': [{'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 'sWeight': s.size_wt_gm, 'lbs': str(s.total_lbs)} for s in c.sizes.all().order_by('sort_order')]} for c in order.colors.all()]
+            'colors': [{'name': c.color_name, 'lots': c.lots, 'sizes': [{'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 'sWeight': s.size_wt_gm, 'lbs': str(s.total_lbs), 'bundleQty': str(s.bundle_qty) if s.bundle_qty else ""} for s in c.sizes.all().order_by('sort_order')]} for c in order.colors.all()]
         }
         return JsonResponse({'status': 'success', 'data': data})
     except Exception as e:

@@ -8,7 +8,6 @@
 
 <style>
     .entry-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
-    .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;}
     
     .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;}
     .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; font-size: 12.5px;}
@@ -33,7 +32,7 @@
     /* Table & Filter Styling */
     table { width: 100%; border-collapse: collapse; margin-top: 10px;}
     th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 13px; color: var(--main-text);}
-    th { background: rgba(0,0,0,0.05); font-weight: 600;}
+    th {background: #ffffff; font-weight: 600;}
     tr:hover { background: rgba(0,0,0,0.02); }
     .filter-input { width: 90%; padding: 4px; margin-top: 5px; font-size: 11px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
     
@@ -49,9 +48,11 @@
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color);}
     .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
 
-    /* Custom Delete Modal */
-    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: 0.3s; }
-    .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+    /* Smart Custom Modal */
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: 0.2s; }
+    .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); transform: translateY(-20px); transition: 0.2s; }
+    .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+    .custom-modal-overlay.show .custom-modal-box { transform: translateY(0); }
 </style>
 
 <!-- Live Summary Section -->
@@ -71,16 +72,6 @@
 
 <!-- Form Section -->
 <div class="entry-card">
-    <div class="form-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid fa-user-tie" style="font-size: 20px; color: #007bff;"></i>
-            <div>
-                <h2 style="margin: 0; font-size: 18px;">OPERATOR ENTRY</h2>
-                <span style="font-size: 11px; color:#777;">Fast Keyboard Nav: Press Enter to move and Save</span>
-            </div>
-        </div>
-    </div>
-
     <input type="hidden" id="op_id" value="">
 
     <div class="grid-row">
@@ -108,7 +99,6 @@
 
     <div class="action-bar">
         <div>
-            <!-- Excel Import Tool -->
             <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleExcelUpload(event)">
             <button class="btn-action btn-excel" onclick="document.getElementById('excelFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
         </div>
@@ -151,7 +141,7 @@
                     </td>
                     <td>
                         <button class="btn-icon btn-edit" onclick="editOperator('{{ op.id }}', '{{ op.operator_id|escapejs }}', '{{ op.name|escapejs }}', '{{ op.section|escapejs }}', '{{ op.is_active|lower }}')"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon btn-del" onclick="showDeleteModal('{{ op.id }}', '{{ op.name|escapejs }}')"><i class="fa-solid fa-trash-can"></i></button>
+                        <button class="btn-icon btn-del" onclick="deleteOperator('{{ op.id }}', '{{ op.name|escapejs }}')"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 </tr>
                 {% empty %}
@@ -162,15 +152,15 @@
     </div>
 </div>
 
-<!-- Custom Delete Modal -->
+<!-- Custom Delete Confirm Modal -->
 <div id="deleteModal" class="custom-modal-overlay">
     <div class="custom-modal-box">
-        <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #e74c3c; margin-bottom: 10px;"></i>
+        <i class="fa-solid fa-circle-question" style="font-size: 40px; color: #e74c3c; margin-bottom: 15px;"></i>
         <h3 style="margin-bottom: 10px; color:#2c3e50;">Confirm Deletion</h3>
-        <p id="deleteModalText" style="font-size: 14px; color:#7f8c8d; margin-bottom: 20px;">Are you sure?</p>
+        <p id="deleteModalText" style="font-size: 14px; color:#7f8c8d; margin-bottom: 20px;"></p>
         <div style="display: flex; gap: 10px; justify-content: center;">
-            <button class="btn-action btn-clear" onclick="closeDeleteModal()">Cancel</button>
-            <button class="btn-action btn-danger" id="confirmDeleteBtn">Delete</button>
+            <button class="btn-action btn-clear" onclick="closeDeleteModal()">Cancel (Esc)</button>
+            <button class="btn-action btn-danger" id="confirmDeleteBtn">Delete (Enter)</button>
         </div>
     </div>
 </div>
@@ -179,11 +169,24 @@
     const csrfToken = '{{ csrf_token }}';
     const dbSections = JSON.parse('{{ sections_json|escapejs }}');
     let secFocus = -1;
+    
+    // Delete Modal variables
     let deleteIdTarget = null;
-    let bulkDeleteTarget = false;
+    let isBulkDelete = false;
+    let isDeleteModalOpen = false;
 
-    // --- Fast Keyboard Navigation ---
+    // --- Fast Keyboard Navigation & Modal Keyboard Control ---
     document.addEventListener('keydown', function(e) {
+        
+        // 1. Delete Modal Key Controls
+        if (isDeleteModalOpen) {
+            e.preventDefault();
+            if (e.key === 'Escape') { closeDeleteModal(); }
+            else if (e.key === 'Enter') { document.getElementById('confirmDeleteBtn').click(); }
+            return;
+        }
+
+        // 2. Section Dropdown Key Controls
         if (e.target.id === 'op_section') {
             let list = document.getElementById("sectionList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); secFocus++; secFocus = addActive(items, secFocus); return; }
@@ -191,6 +194,7 @@
             else if (e.key === 'Enter') { e.preventDefault(); if (secFocus > -1 && items) { items[secFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
+        // 3. Fast Nav Key Controls
         if(e.key === 'Enter' && e.target.classList.contains('fast-nav')) {
             e.preventDefault();
             let navs = Array.from(document.querySelectorAll('.fast-nav'));
@@ -271,45 +275,53 @@
     }
 
     // --- Modal Delete Logic ---
-    function showDeleteModal(id, name) {
-        bulkDeleteTarget = false; deleteIdTarget = id;
-        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete operator: <b>${name}</b>?`;
-        document.getElementById('deleteModal').style.visibility = 'visible';
-        document.getElementById('deleteModal').style.opacity = '1';
-        document.getElementById('confirmDeleteBtn').onclick = executeSingleDelete;
+    function deleteOperator(id, name) {
+        deleteIdTarget = id;
+        isBulkDelete = false;
+        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete operator:<br><b>${name}</b>?`;
+        openDeleteModal();
     }
     
     function confirmBulkDelete() {
         let selected = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.value);
         if(selected.length === 0) { showModal("Please select at least one operator to delete."); return; }
-        bulkDeleteTarget = true; deleteIdTarget = selected;
+        
+        deleteIdTarget = selected;
+        isBulkDelete = true;
         document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete <b>${selected.length}</b> selected operators?`;
-        document.getElementById('deleteModal').style.visibility = 'visible';
-        document.getElementById('deleteModal').style.opacity = '1';
-        document.getElementById('confirmDeleteBtn').onclick = executeBulkDelete;
+        openDeleteModal();
     }
 
-    function closeDeleteModal() { document.getElementById('deleteModal').style.visibility = 'hidden'; document.getElementById('deleteModal').style.opacity = '0'; }
-
-    function executeSingleDelete() {
-        fetch("{% url 'delete_operator_ajax' %}", {
-            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({id: deleteIdTarget})
-        }).then(res => res.json()).then(data => {
-            closeDeleteModal();
-            if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
-            else { showModal("Warning: " + data.message); }
-        });
+    function openDeleteModal() {
+        document.getElementById('deleteModal').classList.add('show');
+        isDeleteModalOpen = true;
     }
 
-    function executeBulkDelete() {
-        fetch("{% url 'bulk_delete_operator_ajax' %}", {
-            method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({ids: deleteIdTarget})
-        }).then(res => res.json()).then(data => {
-            closeDeleteModal();
-            if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1500); } 
-            else { showModal("Warning: " + data.message); }
-        });
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('show');
+        isDeleteModalOpen = false;
+        deleteIdTarget = null;
     }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if(isBulkDelete) {
+            fetch("{% url 'bulk_delete_operator_ajax' %}", {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({ids: deleteIdTarget})
+            }).then(res => res.json()).then(data => {
+                closeDeleteModal();
+                if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1500); } 
+                else { showModal("Warning: " + data.message); }
+            });
+        } else {
+            fetch("{% url 'delete_operator_ajax' %}", {
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({id: deleteIdTarget})
+            }).then(res => res.json()).then(data => {
+                closeDeleteModal();
+                if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
+                else { showModal("Warning: " + data.message); }
+            });
+        }
+    });
 
     // --- Table Filtering & Checkboxes ---
     function filterTable(colIndex, query) {
@@ -328,7 +340,7 @@
         });
     }
 
-    // --- Excel Import Logic (SheetJS) ---
+    // --- Excel Import Logic (Smart Header Parsing) ---
     function handleExcelUpload(e) {
         let file = e.target.files[0];
         if(!file) return;
@@ -338,17 +350,32 @@
             let data = new Uint8Array(evt.target.result);
             let workbook = XLSX.read(data, {type: 'array'});
             let sheetName = workbook.SheetNames[0];
-            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1, range: 1}); // Skip header
+            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {defval: ""});
             
-            let payload = json.map(row => ({
-                operator_id: row[0],
-                name: row[1],
-                section: row[2] || dbSections[0], // Default to first setting section if empty
-                status: row[3] || 'Active'
-            })).filter(r => r.operator_id && r.name); // Ignore empty rows
-            
-            if(payload.length === 0) { showModal("No valid data found in Excel!"); return; }
+            let payload = [];
+            json.forEach(row => {
+                let keys = Object.keys(row);
+                let idKey = keys.find(k => k.toUpperCase().includes('ID'));
+                let nameKey = keys.find(k => k.toUpperCase().includes('NAME'));
+                let secKey = keys.find(k => k.toUpperCase().includes('SECTION'));
+                let statKey = keys.find(k => k.toUpperCase().includes('STATUS'));
 
+                let opId = idKey ? String(row[idKey]).trim() : '';
+                let opName = nameKey ? String(row[nameKey]).trim() : '';
+                let opSec = secKey ? String(row[secKey]).trim() : (dbSections.length > 0 ? dbSections[0] : 'Knitting');
+                let opStat = statKey ? String(row[statKey]).trim() : 'Active';
+
+                if(opId && opName) {
+                    payload.push({
+                        operator_id: opId,
+                        name: opName,
+                        section: opSec,
+                        status: opStat
+                    });
+                }
+            });
+            
+            if(payload.length === 0) { showModal("No valid data found! Please ensure your Excel headers contain 'ID' and 'NAME'."); return; }
             showModal(`Processing ${payload.length} records. Please wait...`, "success");
             
             fetch("{% url 'bulk_save_operator_ajax' %}", {
