@@ -99,8 +99,52 @@ class Operator(models.Model):
     operator_id = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=150)
     section = models.CharField(max_length=100, default='Knitting')
+    
+    # --- New Fields for Production Issue ---
+    category = models.CharField(max_length=50, default='Regular') # Regular, Roster, Extra
+    machine_brand = models.CharField(max_length=100, blank=True, null=True)
+    cell_no = models.CharField(max_length=50, blank=True, null=True)
+    machine_no = models.TextField(blank=True, null=True) # Comma separated allowed
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.operator_id} - {self.name}"
+
+# --- Production Models: Knitting Issue ---
+class KnittingIssue(models.Model):
+    system_id = models.CharField(max_length=20, unique=True)
+    tc_no = models.CharField(max_length=50, unique=True) # Format: TC-102-001
+    
+    # Order Info
+    job_no = models.CharField(max_length=50)
+    buyer_name = models.CharField(max_length=100)
+    style_no = models.CharField(max_length=100)
+    po_no = models.CharField(max_length=100)
+    color = models.CharField(max_length=100)
+    size = models.CharField(max_length=50)
+    lot = models.CharField(max_length=100)
+    operation = models.CharField(max_length=100)
+    
+    # Production Info
+    operator = models.ForeignKey(Operator, on_delete=models.SET_NULL, null=True, blank=True)
+    machine_no = models.CharField(max_length=50, blank=True, null=True)
+    line = models.CharField(max_length=100, blank=True, null=True)
+    shift = models.CharField(max_length=20, default='Day')
+    
+    # Quantity Info
+    issue_qty = models.IntegerField(default=0)
+    issue_weight_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Tracking Info
+    status = models.CharField(max_length=20, default='Pending') # Pending, Received, Deleted
+    delete_reason = models.TextField(blank=True, null=True)
+    print_count = models.IntegerField(default=0)
+    
+    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.tc_no

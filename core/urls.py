@@ -6,7 +6,10 @@ from .views import (
     operator_entry_view, save_operator_ajax, delete_operator_ajax,
     get_notifications_ajax,
     knitting_order_entry_view, search_knitting_job_ajax, 
-    save_knitting_order_ajax, get_knitting_order_details_ajax, knitting_order_action_ajax, bulk_delete_operator_ajax, bulk_save_operator_ajax
+    save_knitting_order_ajax, get_knitting_order_details_ajax, knitting_order_action_ajax, bulk_delete_operator_ajax, bulk_save_operator_ajax,
+    order_issue_entry_view, search_issue_job_ajax, get_issue_job_details_ajax,
+    search_issue_operator_ajax, save_order_issue_ajax, search_tc_for_issue_ajax,
+    get_single_issue_details_ajax, delete_order_issue_ajax,get_machine_line_ajax
 )
 
 urlpatterns = [
@@ -37,4 +40,15 @@ urlpatterns = [
     path('production/knitting/ajax/save-order/', save_knitting_order_ajax, name='save_knitting_order_ajax'),
     path('production/knitting/ajax/get-order/<str:sys_id>/', get_knitting_order_details_ajax, name='get_knitting_order_details_ajax'),
     path('production/knitting/ajax/order-action/', knitting_order_action_ajax, name='knitting_order_action_ajax'),
+
+    # Production Department -> Order Issue (Bundle)
+    path('production/knitting/order-issue/', order_issue_entry_view, name='order_issue_entry'),
+    path('production/knitting/order-issue/ajax/search-job/', search_issue_job_ajax, name='search_issue_job_ajax'),
+    path('production/knitting/order-issue/ajax/get-job/<str:sys_id>/', get_issue_job_details_ajax, name='get_issue_job_details_ajax'),
+    path('production/knitting/order-issue/ajax/search-operator/', search_issue_operator_ajax, name='search_issue_operator_ajax'),
+    path('production/knitting/order-issue/ajax/search-tc/', search_tc_for_issue_ajax, name='search_tc_for_issue_ajax'),
+    path('production/knitting/order-issue/ajax/get-tc/<str:tc_no>/', get_single_issue_details_ajax, name='get_single_issue_details_ajax'),
+    path('production/knitting/order-issue/ajax/save/', save_order_issue_ajax, name='save_order_issue_ajax'),
+    path('production/knitting/order-issue/ajax/delete/', delete_order_issue_ajax, name='delete_order_issue_ajax'),
+    path('production/knitting/order-issue/ajax/get-machine-line/', get_machine_line_ajax, name='get_machine_line_ajax'),
 ]

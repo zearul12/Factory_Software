@@ -149,7 +149,9 @@
                 <span>Knitting Section</span> <i class="fa-solid fa-chevron-down nested-arrow"></i>
             </div>
             <div class="nested-submenu">
-                <a href="{% url 'knitting_order_entry' %}"><i class="fa-solid fa-folder-plus" style="margin-right: 5px;"></i> Order Entry</a>
+                <a href="{% url 'knitting_order_entry' %}"><i class="fa-solid fa-clipboard-list" style="margin-right: 5px;"></i> Knitting Order Entry</a>
+            <!-- নতুন পেজের লিংক -->
+            <a href="{% url 'order_issue_entry' %}"><i class="fa-solid fa-barcode" style="margin-right: 5px;"></i> Order Issue (Bundle)</a>
             </div>
             
             <a href="#">Linking Section</a>
@@ -195,6 +197,19 @@
                 <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
             </div>
             <div class="user-info">
+
+<!-- Set Custom Menu (Shift) -->
+            <div class="header-icon" onclick="toggleShiftMenu()" title="Set Custom Menu" style="position: relative;">
+                <i class="fa-solid fa-sliders"></i>
+                <span class="badge" id="currentShiftBadge" style="background:#8e44ad; right: -15px; top: -5px; padding: 2px 5px;">Day</span>
+                
+                <!-- Shift Dropdown -->
+                <div id="shiftDropdown" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 120px; z-index: 100; margin-top: 15px;">
+                    <div style="padding: 10px; font-size: 12px; font-weight: bold; border-bottom: 1px solid var(--border-color); color: var(--main-text);">Select Shift</div>
+                    <div class="autocomplete-item" onclick="setGlobalShift('Day')" style="padding: 8px 10px; cursor: pointer; color: var(--main-text);">☀ Day Shift</div>
+                    <div class="autocomplete-item" onclick="setGlobalShift('Night')" style="padding: 8px 10px; cursor: pointer; color: var(--main-text);">🌙 Night Shift</div>
+                </div>
+            </div>
                 
                 <!-- Notification Bell & Dropdown (Replace this section) -->
 <div style="position: relative; cursor: pointer; margin-right: 15px; font-size: 18px;" id="notifBtn" onclick="toggleNotifMenu(event)">
@@ -493,6 +508,25 @@
                 submenu.classList.toggle('show');
             }
         }
+
+    // Global Shift Logic
+    function toggleShiftMenu() {
+        let menu = document.getElementById('shiftDropdown');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+    function setGlobalShift(shift) {
+        localStorage.setItem('user_global_shift', shift);
+        document.getElementById('currentShiftBadge').innerText = shift;
+        document.getElementById('shiftDropdown').style.display = 'none';
+        // If order issue page is open, update its field too
+        if(document.getElementById('i_shift')) { document.getElementById('i_shift').value = shift; }
+    }
+    // Load shift on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        let savedShift = localStorage.getItem('user_global_shift') || 'Day';
+        let badge = document.getElementById('currentShiftBadge');
+        if(badge) badge.innerText = savedShift;
+    });
     </script>
 </body>
 </body>

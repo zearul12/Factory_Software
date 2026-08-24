@@ -3,7 +3,6 @@
 {% block page_title %}OPERATOR ENTRY{% endblock %}
 
 {% block content %}
-<!-- Include SheetJS for Excel Import -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
@@ -15,6 +14,7 @@
     .form-group label span { color: #e74c3c; }
     .form-control { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); transition: 0.2s; height: 35px; box-sizing: border-box;}
     .form-control:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+    .form-control:disabled { background: rgba(0,0,0,0.05); cursor: not-allowed; }
     
     .action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);}
     .btn-action { padding: 8px 20px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;}
@@ -22,23 +22,22 @@
     .btn-excel { background: #207347; } .btn-danger { background: #e74c3c; }
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-    /* Live Summary Cards */
     .summary-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
     .summary-card { background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; min-width: 140px; text-align: center; }
     .summary-card h4 { margin: 0 0 5px 0; font-size: 13px; color: var(--main-text); text-transform: uppercase;}
     .summary-card .stats { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;}
     .stats .act { color: #27ae60; } .stats .inact { color: #e74c3c; }
 
-    /* Table & Filter Styling */
     table { width: 100%; border-collapse: collapse; margin-top: 10px;}
     th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 13px; color: var(--main-text);}
-    th {background: #ffffff; font-weight: 600;}
+    th { background: rgba(0,0,0,0.05); font-weight: 600;}
     tr:hover { background: rgba(0,0,0,0.02); }
     .filter-input { width: 90%; padding: 4px; margin-top: 5px; font-size: 11px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
     
     .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
     .status-active { background: rgba(39, 174, 96, 0.1); color: #27ae60; border: 1px solid #27ae60;}
     .status-inactive { background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c;}
+    .cat-badge { font-size: 11px; font-weight: bold; background: #34495e; color: white; padding: 2px 6px; border-radius: 4px;}
     
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 15px; margin: 0 5px; transition: 0.2s; }
     .btn-edit { color: #2980b9; } .btn-del { color: #e74c3c; }
@@ -48,14 +47,12 @@
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color);}
     .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
 
-    /* Smart Custom Modal */
     .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: 0.2s; }
     .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); transform: translateY(-20px); transition: 0.2s; }
     .custom-modal-overlay.show { visibility: visible; opacity: 1; }
     .custom-modal-overlay.show .custom-modal-box { transform: translateY(0); }
 </style>
 
-<!-- Live Summary Section -->
 {% if summary %}
 <div class="summary-container">
     {% for s in summary %}
@@ -70,7 +67,6 @@
 </div>
 {% endif %}
 
-<!-- Form Section -->
 <div class="entry-card">
     <input type="hidden" id="op_id" value="">
 
@@ -81,12 +77,38 @@
         </div>
         <div class="form-group">
             <label>OPERATOR NAME <span style="color:#e74c3c;">*</span></label>
-            <input type="text" id="op_name" class="form-control fast-nav" placeholder="Full Name" autocomplete="off">
+            <!-- Only allow letters, spaces, and dots -->
+            <input type="text" id="op_name" class="form-control fast-nav" placeholder="Full Name" autocomplete="off" oninput="this.value=this.value.replace(/[^a-zA-Z\s.]/g,'')">
         </div>
         <div class="form-group autocomplete-wrapper">
             <label>SECTION <span style="color:#e74c3c;">*</span></label>
             <input type="text" id="op_section" class="form-control fast-nav" value="{{ sections.0 }}" placeholder="Select Section" readonly style="cursor:pointer; background:#fff;" onclick="showSections()" onfocus="showSections()">
             <div id="sectionList" class="autocomplete-list"></div>
+        </div>
+        <div class="form-group">
+            <label>CATEGORY <span style="color:#e74c3c;">*</span></label>
+            <select id="op_category" class="form-control fast-nav" onchange="toggleMachineFields()">
+                <option value="Regular">Regular</option>
+                <option value="Roster">Roster</option>
+                <option value="Extra">Extra</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="grid-row">
+        <div class="form-group autocomplete-wrapper">
+            <label>MACHINE BRAND <span id="star_machine" style="color:#e74c3c;">*</span></label>
+            <!-- Converted to Dropdown like Section -->
+            <input type="text" id="op_brand" class="form-control fast-nav" placeholder="Select Brand" readonly style="cursor:pointer; background:#fff;" onclick="showBrands()" onfocus="showBrands()">
+            <div id="brandList" class="autocomplete-list"></div>
+        </div>
+        <div class="form-group">
+            <label>CELL NO. <span id="star_cell" style="color:#e74c3c;">*</span></label>
+            <input type="text" id="op_cell" class="form-control fast-nav" placeholder="e.g. A" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>MACHINE NO(S) <span id="star_m_no" style="color:#e74c3c;">*</span></label>
+            <input type="text" id="op_machine" class="form-control fast-nav" placeholder="e.g. 01, 02, 05" autocomplete="off">
         </div>
         <div class="form-group">
             <label>STATUS</label>
@@ -122,9 +144,10 @@
             <thead style="position: sticky; top: 0; z-index: 10;">
                 <tr>
                     <th width="5%"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
-                    <th width="20%">OPERATOR ID<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(1, this.value)"></th>
-                    <th width="30%">OPERATOR NAME<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(2, this.value)"></th>
-                    <th width="20%">SECTION<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(3, this.value)"></th>
+                    <th width="15%">OPERATOR ID<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(1, this.value)"></th>
+                    <th width="20%">OPERATOR NAME<br><input type="text" class="filter-input" placeholder="Search..." onkeyup="filterTable(2, this.value)"></th>
+                    <th width="15%">INFO / CATEGORY</th>
+                    <th width="20%">M. BRAND & CELL<br><input type="text" class="filter-input" placeholder="Search Cell..." onkeyup="filterTable(4, this.value)"></th>
                     <th width="10%">STATUS</th>
                     <th width="15%">ACTION</th>
                 </tr>
@@ -135,24 +158,29 @@
                     <td><input type="checkbox" class="row-check" value="{{ op.id }}"></td>
                     <td style="font-weight: bold; color: #007bff;">{{ op.operator_id }}</td>
                     <td>{{ op.name }}</td>
-                    <td>{{ op.section }}</td>
+                    <td><span class="cat-badge">{{ op.category }}</span><br><small>{{ op.section }}</small></td>
                     <td>
-                        {% if op.is_active %}<span class="status-badge status-active">Active</span>{% else %}<span class="status-badge status-inactive">Inactive</span>{% endif %}
+                        {% if op.section|lower == 'knitting' and op.category == 'Regular' %}
+                            <b style="color:#e67e22;">{{ op.machine_brand }}</b> - Cell: <b>{{ op.cell_no }}</b><br>
+                            <small>M/C: {{ op.machine_no }}</small>
+                        {% else %}
+                            <span style="color:#7f8c8d; font-style:italic;">No Fixed Machine</span>
+                        {% endif %}
                     </td>
+                    <td>{% if op.is_active %}<span class="status-badge status-active">Active</span>{% else %}<span class="status-badge status-inactive">Inactive</span>{% endif %}</td>
                     <td>
-                        <button class="btn-icon btn-edit" onclick="editOperator('{{ op.id }}', '{{ op.operator_id|escapejs }}', '{{ op.name|escapejs }}', '{{ op.section|escapejs }}', '{{ op.is_active|lower }}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon btn-edit" onclick="editOperator('{{ op.id }}', '{{ op.operator_id|escapejs }}', '{{ op.name|escapejs }}', '{{ op.section|escapejs }}', '{{ op.category }}', '{{ op.machine_brand|escapejs }}', '{{ op.cell_no|escapejs }}', '{{ op.machine_no|escapejs }}', '{{ op.is_active|lower }}')"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button class="btn-icon btn-del" onclick="deleteOperator('{{ op.id }}', '{{ op.name|escapejs }}')"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 </tr>
                 {% empty %}
-                <tr id="noDataRow"><td colspan="6" style="color: #7f8c8d; font-style: italic;">No operators found.</td></tr>
+                <tr id="noDataRow"><td colspan="7" style="color: #7f8c8d; font-style: italic;">No operators found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Custom Delete Confirm Modal -->
 <div id="deleteModal" class="custom-modal-overlay">
     <div class="custom-modal-box">
         <i class="fa-solid fa-circle-question" style="font-size: 40px; color: #e74c3c; margin-bottom: 15px;"></i>
@@ -168,25 +196,47 @@
 <script>
     const csrfToken = '{{ csrf_token }}';
     const dbSections = JSON.parse('{{ sections_json|escapejs }}');
-    let secFocus = -1;
+    const dbBrands = JSON.parse('{{ brands_json|escapejs }}');
     
-    // Delete Modal variables
+    let secFocus = -1;
+    let brandFocus = -1;
     let deleteIdTarget = null;
     let isBulkDelete = false;
     let isDeleteModalOpen = false;
 
-    // --- Fast Keyboard Navigation & Modal Keyboard Control ---
-    document.addEventListener('keydown', function(e) {
+    // --- Dynamic Disabling Logic based on Section & Category ---
+    function toggleMachineFields() {
+        let sec = document.getElementById('op_section').value.trim();
+        let cat = document.getElementById('op_category').value.trim();
         
-        // 1. Delete Modal Key Controls
-        if (isDeleteModalOpen) {
-            e.preventDefault();
-            if (e.key === 'Escape') { closeDeleteModal(); }
-            else if (e.key === 'Enter') { document.getElementById('confirmDeleteBtn').click(); }
-            return;
-        }
+        let isKnitting = (sec.toLowerCase() === 'knitting');
+        let isRegular = (cat.toLowerCase() === 'regular'); // FIXED: Added toLowerCase() here
+        let enableFields = (isKnitting && isRegular);
 
-        // 2. Section Dropdown Key Controls
+        document.getElementById('op_brand').disabled = !enableFields;
+        document.getElementById('op_cell').disabled = !enableFields;
+        document.getElementById('op_machine').disabled = !enableFields;
+        
+        let color = enableFields ? '#e74c3c' : 'transparent';
+        document.getElementById('star_machine').style.color = color;
+        document.getElementById('star_cell').style.color = color;
+        document.getElementById('star_m_no').style.color = color;
+
+        if(!enableFields) {
+            document.getElementById('op_brand').value = '';
+            document.getElementById('op_cell').value = '';
+            document.getElementById('op_machine').value = '';
+        }
+    }
+
+    // Call on load to set initial state
+    window.onload = function() { toggleMachineFields(); };
+
+    // --- Fast Keyboard Navigation ---
+    document.addEventListener('keydown', function(e) {
+        if (isDeleteModalOpen) { e.preventDefault(); if (e.key === 'Escape') { closeDeleteModal(); } else if (e.key === 'Enter') { document.getElementById('confirmDeleteBtn').click(); } return; }
+        
+        // Section Dropdown keys
         if (e.target.id === 'op_section') {
             let list = document.getElementById("sectionList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); secFocus++; secFocus = addActive(items, secFocus); return; }
@@ -194,16 +244,21 @@
             else if (e.key === 'Enter') { e.preventDefault(); if (secFocus > -1 && items) { items[secFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
-        // 3. Fast Nav Key Controls
-        if(e.key === 'Enter' && e.target.classList.contains('fast-nav')) {
+        // Brand Dropdown keys
+        if (e.target.id === 'op_brand' && !e.target.disabled) {
+            let list = document.getElementById("brandList"); let items = list ? list.getElementsByTagName("div") : null;
+            if (e.key === 'ArrowDown') { e.preventDefault(); brandFocus++; brandFocus = addActive(items, brandFocus); return; }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); brandFocus--; brandFocus = addActive(items, brandFocus); return; }
+            else if (e.key === 'Enter') { e.preventDefault(); if (brandFocus > -1 && items) { items[brandFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
+        }
+
+        // Enter key generic fast nav
+        if(e.key === 'Enter' && e.target.classList.contains('fast-nav') && !e.target.disabled) {
             e.preventDefault();
-            let navs = Array.from(document.querySelectorAll('.fast-nav'));
+            let navs = Array.from(document.querySelectorAll('.fast-nav:not(:disabled)'));
             let idx = navs.indexOf(e.target);
-            if (idx > -1 && idx < navs.length - 1) { 
-                navs[idx + 1].focus(); 
-            } else if (idx === navs.length - 1) { 
-                saveOperator(); // Save on last Enter
-            }
+            if (idx > -1 && idx < navs.length - 1) { navs[idx + 1].focus(); } 
+            else if (idx === navs.length - 1) { saveOperator(); }
         }
     });
 
@@ -217,18 +272,41 @@
         return currentFocus;
     }
 
-    // --- Dynamic Section Dropdown ---
+    // --- Section Dropdown ---
     function showSections() {
         secFocus = -1;
         let list = document.getElementById('sectionList'); list.innerHTML = "";
         dbSections.forEach(s => {
             let div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerText = s;
-            div.onmousedown = () => { document.getElementById('op_section').value = s; list.style.display = 'none'; document.getElementById('op_status').focus(); };
+            div.onmousedown = () => { 
+                document.getElementById('op_section').value = s; 
+                list.style.display = 'none'; 
+                toggleMachineFields(); // update fields state
+                document.getElementById('op_category').focus(); 
+            };
             list.appendChild(div);
         });
         list.style.display = 'block';
     }
-    document.getElementById('op_section').addEventListener('blur', function() { setTimeout(() => { document.getElementById("sectionList").style.display = "none"; }, 150); });
+    document.getElementById('op_section').addEventListener('blur', function() { setTimeout(() => { let sl = document.getElementById("sectionList"); if(sl) sl.style.display = "none"; }, 150); });
+
+    // --- Brand Dropdown ---
+    function showBrands() {
+        if(document.getElementById('op_brand').disabled) return;
+        brandFocus = -1;
+        let list = document.getElementById('brandList'); list.innerHTML = "";
+        dbBrands.forEach(b => {
+            let div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerText = b;
+            div.onmousedown = () => { 
+                document.getElementById('op_brand').value = b; 
+                list.style.display = 'none'; 
+                document.getElementById('op_cell').focus(); 
+            };
+            list.appendChild(div);
+        });
+        list.style.display = 'block';
+    }
+    document.getElementById('op_brand').addEventListener('blur', function() { setTimeout(() => { let bl = document.getElementById("brandList"); if(bl) bl.style.display = "none"; }, 150); });
 
     // --- Core Functions ---
     function clearForm() {
@@ -236,17 +314,29 @@
         document.getElementById('op_operator_id').value = '';
         document.getElementById('op_name').value = '';
         document.getElementById('op_section').value = dbSections.length > 0 ? dbSections[0] : '';
+        document.getElementById('op_category').value = 'Regular';
+        document.getElementById('op_brand').value = '';
+        document.getElementById('op_cell').value = '';
+        document.getElementById('op_machine').value = '';
         document.getElementById('op_status').value = 'true';
+        toggleMachineFields();
         document.getElementById('btnSave').style.display = 'inline-block';
         document.getElementById('btnUpdate').style.display = 'none';
         document.getElementById('op_operator_id').focus();
     }
 
-    function editOperator(id, opId, name, section, isActive) {
+    function editOperator(id, opId, name, section, cat, brand, cell, mac, isActive) {
         document.getElementById('op_id').value = id;
         document.getElementById('op_operator_id').value = opId;
         document.getElementById('op_name').value = name;
         document.getElementById('op_section').value = section;
+        document.getElementById('op_category').value = cat;
+        toggleMachineFields(); // re-evaluates UI based on section/cat
+        if(cat === 'Regular' && section.toLowerCase() === 'knitting') {
+            document.getElementById('op_brand').value = brand;
+            document.getElementById('op_cell').value = cell;
+            document.getElementById('op_machine').value = mac;
+        }
         document.getElementById('op_status').value = isActive;
         document.getElementById('btnSave').style.display = 'none';
         document.getElementById('btnUpdate').style.display = 'inline-block';
@@ -258,99 +348,66 @@
         let opId = document.getElementById('op_operator_id').value.trim();
         let name = document.getElementById('op_name').value.trim();
         let section = document.getElementById('op_section').value.trim();
+        let cat = document.getElementById('op_category').value;
+        let brand = document.getElementById('op_brand').value.trim();
+        let cell = document.getElementById('op_cell').value.trim();
+        let machine = document.getElementById('op_machine').value.trim();
         let isActive = document.getElementById('op_status').value === 'true';
 
         if(!opId || !name) { showModal("Operator ID and Name are required!"); return; }
+        if(section.toLowerCase() === 'knitting' && cat === 'Regular' && (!brand || !cell || !machine)) { 
+            showModal("Machine Brand, Cell No and Machine No are mandatory for Regular Knitting operators."); 
+            return; 
+        }
 
         fetch("{% url 'save_operator_ajax' %}", {
             method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
-            body: JSON.stringify({ id: id, operator_id: opId, name: name, section: section, is_active: isActive })
+            body: JSON.stringify({ id: id, operator_id: opId, name: name, section: section, category: cat, machine_brand: brand, cell_no: cell, machine_no: machine, is_active: isActive })
         }).then(res => res.json()).then(data => {
-            if(data.status === 'success') {
-                clearForm();
-                showModal(data.message, "success");
-                setTimeout(() => location.reload(), 1000);
-            } else { showModal("Error: " + data.message); }
+            if(data.status === 'success') { clearForm(); showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
+            else { showModal("Error: " + data.message); }
         });
     }
 
-    // --- Modal Delete Logic ---
-    function deleteOperator(id, name) {
-        deleteIdTarget = id;
-        isBulkDelete = false;
-        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete operator:<br><b>${name}</b>?`;
-        openDeleteModal();
-    }
+    function deleteOperator(id, name) { deleteIdTarget = id; isBulkDelete = false; document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete operator:<br><b>${name}</b>?`; openDeleteModal(); }
     
     function confirmBulkDelete() {
         let selected = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.value);
         if(selected.length === 0) { showModal("Please select at least one operator to delete."); return; }
-        
-        deleteIdTarget = selected;
-        isBulkDelete = true;
-        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete <b>${selected.length}</b> selected operators?`;
-        openDeleteModal();
+        deleteIdTarget = selected; isBulkDelete = true;
+        document.getElementById('deleteModalText').innerHTML = `Are you sure you want to delete <b>${selected.length}</b> selected operators?`; openDeleteModal();
     }
 
-    function openDeleteModal() {
-        document.getElementById('deleteModal').classList.add('show');
-        isDeleteModalOpen = true;
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('show');
-        isDeleteModalOpen = false;
-        deleteIdTarget = null;
-    }
+    function openDeleteModal() { document.getElementById('deleteModal').classList.add('show'); isDeleteModalOpen = true; }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('show'); isDeleteModalOpen = false; deleteIdTarget = null; }
 
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if(isBulkDelete) {
-            fetch("{% url 'bulk_delete_operator_ajax' %}", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({ids: deleteIdTarget})
-            }).then(res => res.json()).then(data => {
-                closeDeleteModal();
-                if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1500); } 
-                else { showModal("Warning: " + data.message); }
-            });
-        } else {
-            fetch("{% url 'delete_operator_ajax' %}", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({id: deleteIdTarget})
-            }).then(res => res.json()).then(data => {
-                closeDeleteModal();
-                if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
-                else { showModal("Warning: " + data.message); }
-            });
-        }
+        let url = isBulkDelete ? "{% url 'bulk_delete_operator_ajax' %}" : "{% url 'delete_operator_ajax' %}";
+        let body = isBulkDelete ? {ids: deleteIdTarget} : {id: deleteIdTarget};
+        fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify(body) })
+        .then(res => res.json()).then(data => {
+            closeDeleteModal();
+            if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 1000); } 
+            else { showModal("Warning: " + data.message); }
+        });
     });
 
-    // --- Table Filtering & Checkboxes ---
     function filterTable(colIndex, query) {
         query = query.toLowerCase();
         let rows = document.querySelectorAll('.data-row');
-        rows.forEach(row => {
-            let text = row.cells[colIndex].innerText.toLowerCase();
-            row.style.display = text.includes(query) ? '' : 'none';
-        });
+        rows.forEach(row => { row.style.display = row.cells[colIndex].innerText.toLowerCase().includes(query) ? '' : 'none'; });
     }
 
-    function toggleAll(source) {
-        let checkboxes = document.querySelectorAll('.row-check');
-        checkboxes.forEach(cb => {
-            if(cb.closest('tr').style.display !== 'none') { cb.checked = source.checked; }
-        });
-    }
+    function toggleAll(source) { document.querySelectorAll('.row-check').forEach(cb => { if(cb.closest('tr').style.display !== 'none') cb.checked = source.checked; }); }
 
-    // --- Excel Import Logic (Smart Header Parsing) ---
     function handleExcelUpload(e) {
         let file = e.target.files[0];
         if(!file) return;
-        
         let reader = new FileReader();
         reader.onload = function(evt) {
             let data = new Uint8Array(evt.target.result);
             let workbook = XLSX.read(data, {type: 'array'});
-            let sheetName = workbook.SheetNames[0];
-            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {defval: ""});
+            let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
             
             let payload = [];
             json.forEach(row => {
@@ -359,35 +416,34 @@
                 let nameKey = keys.find(k => k.toUpperCase().includes('NAME'));
                 let secKey = keys.find(k => k.toUpperCase().includes('SECTION'));
                 let statKey = keys.find(k => k.toUpperCase().includes('STATUS'));
+                let catKey = keys.find(k => k.toUpperCase().includes('CATEGORY'));
+                let brKey = keys.find(k => k.toUpperCase().includes('BRAND'));
+                let celKey = keys.find(k => k.toUpperCase().includes('CELL'));
+                let macKey = keys.find(k => k.toUpperCase().includes('MACHINE'));
 
                 let opId = idKey ? String(row[idKey]).trim() : '';
                 let opName = nameKey ? String(row[nameKey]).trim() : '';
-                let opSec = secKey ? String(row[secKey]).trim() : (dbSections.length > 0 ? dbSections[0] : 'Knitting');
-                let opStat = statKey ? String(row[statKey]).trim() : 'Active';
-
                 if(opId && opName) {
                     payload.push({
-                        operator_id: opId,
-                        name: opName,
-                        section: opSec,
-                        status: opStat
+                        operator_id: opId, name: opName,
+                        section: secKey ? String(row[secKey]).trim() : (dbSections.length > 0 ? dbSections[0] : 'Knitting'),
+                        status: statKey ? String(row[statKey]).trim() : 'Active',
+                        category: catKey ? String(row[catKey]).trim() : 'Regular',
+                        brand: brKey ? String(row[brKey]).trim() : '',
+                        cell: celKey ? String(row[celKey]).trim() : '',
+                        machine: macKey ? String(row[macKey]).trim() : ''
                     });
                 }
             });
-            
-            if(payload.length === 0) { showModal("No valid data found! Please ensure your Excel headers contain 'ID' and 'NAME'."); return; }
-            showModal(`Processing ${payload.length} records. Please wait...`, "success");
-            
-            fetch("{% url 'bulk_save_operator_ajax' %}", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
-                body: JSON.stringify({operators: payload})
-            }).then(res => res.json()).then(data => {
+            if(payload.length === 0) { showModal("No valid data found!"); return; }
+            showModal(`Processing ${payload.length} records...`, "success");
+            fetch("{% url 'bulk_save_operator_ajax' %}", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken }, body: JSON.stringify({operators: payload}) })
+            .then(res => res.json()).then(data => {
                 if(data.status === 'success') { showModal(data.message, "success"); setTimeout(() => location.reload(), 2000); } 
                 else { showModal("Error: " + data.message); }
             });
         };
-        reader.readAsArrayBuffer(file);
-        e.target.value = ""; // Reset input
+        reader.readAsArrayBuffer(file); e.target.value = ""; 
     }
 </script>
 {% endblock %}
