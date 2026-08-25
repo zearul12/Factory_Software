@@ -179,7 +179,10 @@
         <div class="spacer"></div>
         
         {% if request.user.is_superuser %}
-        <a href="{% url 'system_settings' %}" class="nav-item" style="border-top: 1px solid rgba(255,255,255,0.1);">
+        <a href="{% url 'user_management' %}" class="nav-item" style="border-top: 1px solid rgba(255,255,255,0.1);">
+            <div class="nav-item-left"><i class="fa-solid fa-users-shield icon" style="color: #2ecc71;"></i> <span>User Management</span></div>
+        </a>
+        <a href="{% url 'system_settings' %}" class="nav-item">
             <div class="nav-item-left"><i class="fa-solid fa-gears icon" style="color: #bdc3c7;"></i> <span>System Settings</span></div>
         </a>
         {% endif %}
