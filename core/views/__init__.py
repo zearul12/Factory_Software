@@ -7,3 +7,4 @@ from .notification_views import *
 from .production.knitting_order_entry import *
 from .operator_views import *
 from .production.order_issue_views import *
+from .production.yarn_receive_views import *

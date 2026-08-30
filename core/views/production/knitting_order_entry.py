@@ -228,13 +228,20 @@ def knitting_order_action_ajax(request):
         action = data.get('action')
         
         if action == 'approve_all':
-            notifs = SystemNotification.objects.filter(user=request.user, is_read=False, title__startswith="Order ")
+            # Now it fetches all unread notifications, regardless of title
+            notifs = SystemNotification.objects.filter(user=request.user, is_read=False)
             for notif in notifs:
                 try:
-                    job_no = notif.title.split(': ')[1]
-                    KnittingOrder.objects.filter(job_no=job_no).update(status='Approved', changed_fields='')
-                    notif.is_read = True
-                    notif.save()
+                    job_no = ""
+                    if "Order Approval:" in notif.title or "Order Updated:" in notif.title:
+                        job_no = notif.title.split(': ')[1]
+                    elif "URGENT: Approval Needed for" in notif.title:
+                        job_no = notif.title.split('for ')[1]
+                    
+                    if job_no:
+                        KnittingOrder.objects.filter(job_no=job_no).update(status='Approved', changed_fields='')
+                        notif.is_read = True
+                        notif.save()
                 except: pass
             return JsonResponse({'status': 'success', 'msg': 'All pending orders approved!'})
             

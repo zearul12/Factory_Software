@@ -14,10 +14,8 @@
         body.dark-mode {
             --main-bg: #121212; --main-text: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; --sidebar-bg: #000000;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--main-bg); color: var(--main-text); display: flex; height: 100vh; overflow: hidden; transition: background 0.3s; }
-
         /* --- Smart Sidebar --- */
         .sidebar { width: 280px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; transition: width 0.3s ease; overflow-x: hidden; overflow-y: auto; z-index: 100;}
         .sidebar.collapsed { width: 75px; } 
@@ -37,13 +35,11 @@
         .nav-item i.icon { width: 45px; text-align: center; font-size: 18px; flex-shrink: 0;}
         .nav-item .arrow { font-size: 12px; transition: transform 0.3s; flex-shrink: 0;}
         .nav-item.active .arrow { transform: rotate(180deg); }
-
         .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; background: rgba(0,0,0,0.15); flex-shrink: 0;}
         .submenu.show { max-height: 500px; }
         .submenu a { display: block; padding: 10px 20px 10px 60px; color: #bbb; text-decoration: none; font-size: 14px; transition: 0.2s; white-space: nowrap;}
         .submenu a:hover { color: #fff; background: rgba(255,255,255,0.05); border-left: 3px solid #00a8ff;}
         .spacer { flex-grow: 1; }
-
         /* Main Content */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s ease; }
         .topbar { height: 60px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; z-index: 10;}
@@ -55,7 +51,7 @@
         .user-info { display: flex; align-items: center; gap: 15px; }
         .logout-btn { background: #e74c3c; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
         .content-area { flex: 1; padding: 20px; overflow-y: auto;}
-
+        
         /* Notification Dropdown Design */
         .notif-dropdown { position: absolute; top: 35px; right: -5px; width: 320px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: none; z-index: 999; text-align: left; cursor: default; }
         .notif-dropdown.show { display: block; }
@@ -66,9 +62,7 @@
         .notif-title { font-size: 13px; font-weight: bold; margin-bottom: 3px; color: #007bff; }
         .notif-msg { font-size: 12px; color: #7f8c8d; line-height: 1.4; }
         .notif-time { font-size: 10px; color: #aaa; margin-top: 5px; text-align: right; }
-
         .app-footer { height: 40px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 13px; color: #7f8c8d; font-weight: 500;}
-
         /* Theme Panel */
         .theme-panel { position: fixed; right: -320px; top: 0; width: 320px; height: 100vh; background: var(--card-bg); box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1000; padding: 20px; overflow-y: auto; border-left: 1px solid var(--border-color);}
         .theme-panel.open { right: 0; }
@@ -96,17 +90,14 @@
         <a href="{% url 'dashboard' %}" class="nav-item">
             <div class="nav-item-left"><i class="fa-solid fa-chart-line icon" style="color: #00a8ff;"></i> <span>Dashboard</span></div>
         </a>
-
         <!-- 1. Marketing & Mrc. -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-bullhorn icon" style="color: #e84118;"></i> <span>Marketing & Mrc.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu">
-            <!-- আগের লিংক মুছে দেওয়া হয়েছে, ভবিষ্যতে নতুন কিছু আসলে এখানে দেব -->
             <a href="#">Dashboard</a>
         </div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-calendar-days icon" style="color: #9c88ff;"></i> <span>IE & Planning Dpt.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
@@ -115,13 +106,11 @@
             <a href="{% url 'buyer_entry' %}">Buyer Entry</a>
             <a href="#">Master Plan</a>
         </div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-boxes-stacked icon" style="color: #fbc531;"></i> <span>Store Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu"><a href="#">General Store</a><a href="#">Yarn Store</a></div>
-
         <!-- 4. HR Admin & Accounts -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-users-cog icon" style="color: #27ae60;"></i> <span>HR-Admin & Accounts</span></div>
@@ -131,13 +120,11 @@
             <a href="{% url 'knit_machine_entry' %}"><i class="fa-solid fa-cogs" style="margin-right: 5px;"></i> Knit Machine Entry</a>
             <a href="{% url 'operator_entry' %}"><i class="fa-solid fa-user-tie" style="margin-right: 5px;"></i> Operator Entry</a>
         </div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-shirt icon" style="color: #e67e22;"></i> <span>Sample Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu"><a href="#">Development</a></div>
-
         <!-- 6. Production Department -->
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-cogs icon" style="color: #00cec9;"></i> <span>Production Department</span></div>
@@ -150,26 +137,22 @@
             </div>
             <div class="nested-submenu">
                 <a href="{% url 'knitting_order_entry' %}"><i class="fa-solid fa-clipboard-list" style="margin-right: 5px;"></i> Knitting Order Entry</a>
-            <!-- নতুন পেজের লিংক -->
-            <a href="{% url 'order_issue_entry' %}"><i class="fa-solid fa-barcode" style="margin-right: 5px;"></i> Order Issue (Bundle)</a>
+                <a href="{% url 'yarn_receive_entry' %}"><i class="fa-solid fa-boxes-packing" style="margin-right: 5px;"></i> Yarn Receive Entry</a>
+                <a href="{% url 'order_issue_entry' %}"><i class="fa-solid fa-barcode" style="margin-right: 5px;"></i> Order Issue (Bundle)</a>
             </div>
-            
             <a href="#">Linking Section</a>
             <a href="#">Finishing Section</a>
         </div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-check-double icon" style="color: #e84393;"></i> <span>Quality Department</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu"><a href="#">QC Reports</a></div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-screwdriver-wrench icon" style="color: #7f8c8d;"></i> <span>Maintenance Dpt.</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
         </div>
         <div class="submenu"><a href="#">Machine Servicing</a></div>
-
         <div class="nav-item" onclick="toggleSubmenu(this)">
             <div class="nav-item-left"><i class="fa-solid fa-chart-pie icon" style="color: #48dbfb;"></i> <span>Reports</span></div>
             <i class="fa-solid fa-chevron-down arrow"></i>
@@ -199,9 +182,8 @@
                 <button class="toggle-sidebar-btn" onclick="toggleSidebar(event)"><i class="fa-solid fa-bars"></i></button>
                 <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
             </div>
-            <div class="user-info">
-
-<!-- Set Custom Menu (Shift) -->
+            <div class="user-info"> 
+            <!-- Set Custom Menu (Shift) -->
             <div class="header-icon" onclick="toggleShiftMenu()" title="Set Custom Menu" style="position: relative;">
                 <i class="fa-solid fa-sliders"></i>
                 <span class="badge" id="currentShiftBadge" style="background:#8e44ad; right: -15px; top: -5px; padding: 2px 5px;">Day</span>
@@ -209,26 +191,26 @@
                 <!-- Shift Dropdown -->
                 <div id="shiftDropdown" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 120px; z-index: 100; margin-top: 15px;">
                     <div style="padding: 10px; font-size: 12px; font-weight: bold; border-bottom: 1px solid var(--border-color); color: var(--main-text);">Select Shift</div>
-                    <div class="autocomplete-item" onclick="setGlobalShift('Day')" style="padding: 8px 10px; cursor: pointer; color: var(--main-text);">☀ Day Shift</div>
+                    <div class="autocomplete-item" onclick="setGlobalShift('Day')" style="padding: 8px 10px; cursor: pointer; color: var(--main-text);">☀️ Day Shift</div>
                     <div class="autocomplete-item" onclick="setGlobalShift('Night')" style="padding: 8px 10px; cursor: pointer; color: var(--main-text);">🌙 Night Shift</div>
                 </div>
             </div>
+            
+            <!-- Notification Bell & Dropdown -->
+            <div style="position: relative; cursor: pointer; margin-right: 15px; font-size: 18px;" id="notifBtn" onclick="toggleNotifMenu(event)">
+                <i class="fa-solid fa-bell"></i>
+                <span id="notif-badge" style="position: absolute; top: -8px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none;">0</span>
                 
-                <!-- Notification Bell & Dropdown (Replace this section) -->
-<div style="position: relative; cursor: pointer; margin-right: 15px; font-size: 18px;" id="notifBtn" onclick="toggleNotifMenu(event)">
-    <i class="fa-solid fa-bell"></i>
-    <span id="notif-badge" style="position: absolute; top: -8px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none;">0</span>
-    
-    <div class="notif-dropdown" id="notifDropdown" style="width: 360px;">
-        <div class="notif-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <span><i class="fa-solid fa-bell" style="color:#e74c3c;"></i> Notifications</span>
-            <button onclick="quickApproveAll(event)" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">Approve All</button>
-        </div>
-        <div class="notif-list" id="notif-list">
-            <div style="padding:15px; text-align:center; font-size:12px; color:#aaa;">Loading...</div>
-        </div>
-    </div>
-</div>
+                <div class="notif-dropdown" id="notifDropdown" style="width: 360px;">
+                    <div class="notif-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fa-solid fa-bell" style="color:#e74c3c;"></i> Notifications</span>
+                        <button onclick="quickApproveAll(event)" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">Approve All</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div style="padding:15px; text-align:center; font-size:12px; color:#aaa;">Loading...</div>
+                    </div>
+                </div>
+            </div>
 
                 <span><i class="fa-solid fa-circle-user"></i> Hello, {{ request.user.first_name|default:request.user.username }}</span>
                 <a href="{% url 'logout' %}" class="logout-btn"><i class="fa-solid fa-power-off"></i> Logout</a>
@@ -238,7 +220,6 @@
         <div class="content-area" id="main-content" onclick="autoHideSidebar()">
             {% block content %}{% endblock %}
         </div>
-
         <div class="app-footer">
             <div style="flex:1; text-align:left;">App {{ app_version }}</div>
             <div style="flex:1; text-align:center;">{{ copyright_text }}</div>
@@ -259,6 +240,34 @@
         <div class="theme-section-title">Solid Colors</div><div class="color-grid" id="solid-colors"></div>
         <div class="theme-section-title">Gradient Colors</div><div class="color-grid" id="gradient-colors"></div>
         <div class="theme-section-title">Pattern Designs</div><div class="color-grid" id="pattern-colors"></div>
+    </div>
+
+    <!-- Global Custom Modal -->
+    <style>
+        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
+        .custom-modal-overlay.show { visibility: visible; opacity: 1; }
+        .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
+        .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
+        .modal-icon { font-size: 40px; margin-bottom: 15px; }
+        .modal-text { font-size: 15px; color: var(--main-text); margin-bottom: 25px; font-weight: 500;}
+        .btn-confirm { padding: 8px 25px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
+        /* Nested Submenu CSS */
+        .nested-nav-item { padding: 10px 20px 10px 60px; cursor: pointer; color: #bbb; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-size: 14px;}
+        .nested-nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); border-left: 3px solid #00a8ff; }
+        .nested-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; background: rgba(0,0,0,0.2); }
+        .nested-submenu.show { max-height: 200px; }
+        .nested-submenu a { padding-left: 80px; font-size: 13px; color: #999; }
+        .nested-submenu a:hover { color: #fff; }
+        .nested-arrow { font-size: 10px; transition: transform 0.3s; }
+        .nested-nav-item.active .nested-arrow { transform: rotate(180deg); }
+    </style>
+    
+    <div id="global-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div class="modal-icon" id="global-modal-icon"></div>
+            <div class="modal-text" id="global-modal-text">Message</div>
+            <button class="btn-confirm" onclick="closeGlobalModal()">OK</button>
+        </div>
     </div>
 
     <!-- JavaScript -->
@@ -299,12 +308,12 @@
             localStorage.setItem('dark-mode', document.body.classList.contains('dark-mode') ? 'yes' : 'no');
         }
         if (localStorage.getItem('dark-mode') === 'yes') { document.body.classList.add('dark-mode'); }
-
+        
         const root = document.documentElement;
         const solidColors = ['#2c3e50', '#1e272e', '#2980b9', '#27ae60', '#d35400', '#c0392b', '#16a085', '#34495e', '#ff4757', '#1e90ff'];
         const gradientColors = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%)', 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', 'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)', 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #0ba360 0%, #3cba92 100%)'];
         const patternColors = ['radial-gradient(circle, #2c3e50 10%, #000000 100%)', 'radial-gradient(circle, #8e44ad 10%, #341f97 100%)', 'repeating-linear-gradient(45deg, #2c3e50, #2c3e50 10px, #34495e 10px, #34495e 20px)', 'repeating-linear-gradient(45deg, #16a085, #16a085 10px, #1abc9c 10px, #1abc9c 20px)', 'linear-gradient(to right, #ff416c, #ff4b2b)', 'linear-gradient(to right, #11998e, #38ef7d)', 'linear-gradient(to right, #fc4a1a, #f7b733)', 'linear-gradient(to bottom right, #00c6ff, #0072ff)', 'repeating-radial-gradient(circle, #34495e, #34495e 5px, #2c3e50 5px, #2c3e50 10px)', 'linear-gradient(135deg, #2c3e50, #000)'];
-
+        
         function applyTheme(backgroundData) {
             root.style.setProperty('--sidebar-bg', backgroundData);
             localStorage.setItem('sidebar-bg', backgroundData);
@@ -317,107 +326,10 @@
             });
         }
         generateButtons(solidColors, 'solid-colors'); generateButtons(gradientColors, 'gradient-colors'); generateButtons(patternColors, 'pattern-colors');
+        
         const savedBg = localStorage.getItem('sidebar-bg');
         if (savedBg) { root.style.setProperty('--sidebar-bg', savedBg); }
 
-        // --- Notification Engine ---
-        function fetchNotifications() {
-            fetch("/ajax/notifications/")
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    let badge = document.getElementById('notif-badge');
-                    let list = document.getElementById('notif-list');
-                    if (data.count > 0) {
-                        badge.innerText = data.count; badge.style.display = 'block';
-                        list.innerHTML = '';
-                        data.notifs.forEach(n => {
-                            // Quick Approve Button Logic
-                            let btnHtml = n.job_no ? `<button onclick="quickApprove('${n.job_no}', event)" style="margin-top:5px; background:#007bff; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:3px; cursor:pointer;">Quick Approve</button>` : '';
-                            
-                            list.innerHTML += `
-                                <div class="notif-item" style="display:block; text-decoration:none; color:inherit; border-bottom:1px solid #eee;">
-                                    <a href="${n.link}" style="text-decoration:none; color:inherit; display:block;">
-                                        <div class="notif-title">${n.title}</div>
-                                        <div class="notif-msg">${n.message}</div>
-                                    </a>
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        ${btnHtml}
-                                        <div class="notif-time">${n.time}</div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        badge.style.display = 'none';
-                        list.innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:13px;">No new notifications.</div>';
-                    }
-                }
-            });
-        }
-        
-        function quickApprove(jobNo, event) {
-            event.stopPropagation();
-            fetch('/production/knitting/ajax/order-action/', {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
-                body: JSON.stringify({action: 'approve', job_no: jobNo})
-            }).then(res=>res.json()).then(data => {
-                if(data.status === 'success') { alert(data.msg); fetchNotifications(); }
-            });
-        }
-
-        function quickApproveAll(event) {
-            event.stopPropagation();
-            fetch('/production/knitting/ajax/order-action/', {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
-                body: JSON.stringify({action: 'approve_all'})
-            }).then(res=>res.json()).then(data => {
-                if(data.status === 'success') { alert(data.msg); fetchNotifications(); }
-            });
-        }
-        
-        function toggleNotifMenu(e) {
-            e.stopPropagation(); document.getElementById('notifDropdown').classList.toggle('show');
-        }
-        
-        document.addEventListener('click', function(e) {
-            let menu = document.getElementById('notifDropdown');
-            if (menu && menu.classList.contains('show') && !e.target.closest('#notifBtn')) { menu.classList.remove('show'); }
-        });
-
-        window.addEventListener('load', fetchNotifications);
-    </script>
-
-<!-- Global Custom Modal -->
-    <style>
-        .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
-        .custom-modal-overlay.show { visibility: visible; opacity: 1; }
-        .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: scale(0.8); transition: all 0.3s ease; border: 1px solid var(--border-color);}
-        .custom-modal-overlay.show .custom-modal-box { transform: scale(1); }
-        .modal-icon { font-size: 40px; margin-bottom: 15px; }
-        .modal-text { font-size: 15px; color: var(--main-text); margin-bottom: 25px; font-weight: 500;}
-        .btn-confirm { padding: 8px 25px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;}
-
-    /* Nested Submenu CSS */
-        .nested-nav-item { padding: 10px 20px 10px 60px; cursor: pointer; color: #bbb; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-size: 14px;}
-        .nested-nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); border-left: 3px solid #00a8ff; }
-        .nested-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; background: rgba(0,0,0,0.2); }
-        .nested-submenu.show { max-height: 200px; }
-        .nested-submenu a { padding-left: 80px; font-size: 13px; color: #999; }
-        .nested-submenu a:hover { color: #fff; }
-        .nested-arrow { font-size: 10px; transition: transform 0.3s; }
-        .nested-nav-item.active .nested-arrow { transform: rotate(180deg); }
-    </style>
-
-    <div id="global-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box">
-            <div class="modal-icon" id="global-modal-icon"></div>
-            <div class="modal-text" id="global-modal-text">Message</div>
-            <button class="btn-confirm" onclick="closeGlobalModal()">OK</button>
-        </div>
-    </div>
-
-    <script>
         // --- Global Modal Engine ---
         function showModal(msg, type="error") {
             document.getElementById('global-modal-text').innerText = msg;
@@ -437,9 +349,9 @@
                     closeGlobalModal(); 
                 }
             }
-        }, true); // Use capture phase to stop other enter actions
+        }, true);
 
-        // --- Notification Engine ---
+        // --- Smart Notification Engine ---
         function fetchNotifications() {
             fetch("/ajax/notifications/")
             .then(res => res.json())
@@ -451,7 +363,9 @@
                         badge.innerText = data.count; badge.style.display = 'block';
                         list.innerHTML = '';
                         data.notifs.forEach(n => {
-                            let btnHtml = n.job_no ? `<button onclick="quickApprove('${n.job_no}', event)" style="margin-top:5px; background:#007bff; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:3px; cursor:pointer;">Quick Approve</button>` : '';
+                            // MAGIC FIX: Now using sys_id instead of job_no for Quick Approve
+                            let btnHtml = n.sys_id ? `<button onclick="quickApprove('${n.sys_id}', event)" style="margin-top:5px; background:#007bff; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:3px; cursor:pointer;">Quick Approve</button>` : '';
+                            
                             list.innerHTML += `
                                 <div class="notif-item" style="display:block; text-decoration:none; color:inherit; border-bottom:1px solid #eee;">
                                     <a href="${n.link}" style="text-decoration:none; color:inherit; display:block;">
@@ -471,13 +385,13 @@
                 }
             });
         }
-        
-        // Quick Approve using beautiful Modal
-        function quickApprove(jobNo, event) {
+
+        // MAGIC FIX: Expected 'sysId' and passing it to backend as 'system_id'
+        function quickApprove(sysId, event) {
             event.stopPropagation();
             fetch('/production/knitting/ajax/order-action/', {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
-                body: JSON.stringify({action: 'approve', job_no: jobNo})
+                body: JSON.stringify({action: 'approve', system_id: sysId})
             }).then(res=>res.json()).then(data => {
                 if(data.status === 'success') { showModal(data.msg, "success"); fetchNotifications(); }
             });
@@ -492,16 +406,23 @@
                 if(data.status === 'success') { showModal(data.msg, "success"); fetchNotifications(); }
             });
         }
-        
+
         function toggleNotifMenu(e) {
             e.stopPropagation(); document.getElementById('notifDropdown').classList.toggle('show');
+            fetchNotifications(); // Refresh instantly when opened
         }
+        
         document.addEventListener('click', function(e) {
             let menu = document.getElementById('notifDropdown');
             if (menu && menu.classList.contains('show') && !e.target.closest('#notifBtn')) { menu.classList.remove('show'); }
         });
 
-        window.addEventListener('load', fetchNotifications);
+        // Initialize and Start Auto-Polling (Real-Time Magic)
+        window.addEventListener('load', () => {
+            fetchNotifications();
+            // Automatically fetch notifications every 15 seconds!
+            setInterval(fetchNotifications, 15000); 
+        });
 
         function toggleNestedSubmenu(element, event) {
             event.stopPropagation();
@@ -512,25 +433,22 @@
             }
         }
 
-    // Global Shift Logic
-    function toggleShiftMenu() {
-        let menu = document.getElementById('shiftDropdown');
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
-    function setGlobalShift(shift) {
-        localStorage.setItem('user_global_shift', shift);
-        document.getElementById('currentShiftBadge').innerText = shift;
-        document.getElementById('shiftDropdown').style.display = 'none';
-        // If order issue page is open, update its field too
-        if(document.getElementById('i_shift')) { document.getElementById('i_shift').value = shift; }
-    }
-    // Load shift on page load
-    document.addEventListener("DOMContentLoaded", function() {
-        let savedShift = localStorage.getItem('user_global_shift') || 'Day';
-        let badge = document.getElementById('currentShiftBadge');
-        if(badge) badge.innerText = savedShift;
-    });
+        // Global Shift Logic
+        function toggleShiftMenu() {
+            let menu = document.getElementById('shiftDropdown');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+        function setGlobalShift(shift) {
+            localStorage.setItem('user_global_shift', shift);
+            document.getElementById('currentShiftBadge').innerText = shift;
+            document.getElementById('shiftDropdown').style.display = 'none';
+            if(document.getElementById('i_shift')) { document.getElementById('i_shift').value = shift; }
+        }
+        document.addEventListener("DOMContentLoaded", function() {
+            let savedShift = localStorage.getItem('user_global_shift') || 'Day';
+            let badge = document.getElementById('currentShiftBadge');
+            if(badge) badge.innerText = savedShift;
+        });
     </script>
-</body>
 </body>
 </html>

@@ -9,7 +9,9 @@ from .views import (
     save_knitting_order_ajax, get_knitting_order_details_ajax, knitting_order_action_ajax, bulk_delete_operator_ajax, bulk_save_operator_ajax,
     order_issue_entry_view, search_issue_job_ajax, get_issue_job_details_ajax,
     search_issue_operator_ajax, save_order_issue_ajax, search_tc_for_issue_ajax,
-    get_single_issue_details_ajax, delete_order_issue_ajax,get_machine_line_ajax
+    get_single_issue_details_ajax, delete_order_issue_ajax,get_machine_line_ajax,
+    yarn_receive_entry_view, search_yarn_receive_job_ajax, 
+    get_yarn_receive_details_ajax, save_yarn_receive_ajax,send_approval_knock_ajax
 )
 
 urlpatterns = [
@@ -40,6 +42,13 @@ urlpatterns = [
     path('production/knitting/ajax/save-order/', save_knitting_order_ajax, name='save_knitting_order_ajax'),
     path('production/knitting/ajax/get-order/<str:sys_id>/', get_knitting_order_details_ajax, name='get_knitting_order_details_ajax'),
     path('production/knitting/ajax/order-action/', knitting_order_action_ajax, name='knitting_order_action_ajax'),
+
+# Production Department -> Yarn Receive
+    path('production/knitting/yarn-receive/', yarn_receive_entry_view, name='yarn_receive_entry'),
+    path('production/knitting/yarn-receive/ajax/search-job/', search_yarn_receive_job_ajax, name='search_yarn_receive_job_ajax'),
+    path('production/knitting/yarn-receive/ajax/get-job/<str:sys_id>/', get_yarn_receive_details_ajax, name='get_yarn_receive_details_ajax'),
+    path('production/knitting/yarn-receive/ajax/save/', save_yarn_receive_ajax, name='save_yarn_receive_ajax'),
+    path('production/knitting/yarn-receive/ajax/knock/', send_approval_knock_ajax, name='send_approval_knock_ajax'),
 
     # Production Department -> Order Issue (Bundle)
     path('production/knitting/order-issue/', order_issue_entry_view, name='order_issue_entry'),

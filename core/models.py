@@ -159,3 +159,36 @@ class KnittingIssue(models.Model):
 
     def __str__(self):
         return self.tc_no
+
+# --- Production Models: Yarn Receive ---
+class YarnReceive(models.Model):
+    system_id = models.CharField(max_length=20, unique=True)
+    job_no = models.CharField(max_length=50)
+    buyer_name = models.CharField(max_length=100)
+    style_no = models.CharField(max_length=100)
+    po_no = models.CharField(max_length=100)
+    plan_pct = models.IntegerField(default=0)
+    color = models.CharField(max_length=100)
+    
+    yarn_name = models.CharField(max_length=150)
+    allowance_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    lot_name = models.CharField(max_length=100)
+    req_weight_lbs = models.IntegerField(default=0)
+    
+    before_received_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    current_received_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_received_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.job_no} - {self.yarn_name} - {self.lot_name}"
+
+class YarnReceiveHistory(models.Model):
+    receive_record = models.ForeignKey(YarnReceive, on_delete=models.CASCADE, related_name='history')
+    received_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    received_date = models.DateTimeField(auto_now_add=True)
+    received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
