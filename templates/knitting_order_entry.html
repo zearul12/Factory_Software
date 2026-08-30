@@ -3,6 +3,8 @@
 {% block page_title %}KNITTING ORDER ENTRY{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
 <style>
     .highlight-change {
         border: 2px solid #e74c3c !important;
@@ -13,7 +15,6 @@
     @keyframes pulse-border {
         0% { border-color: #e74c3c; } 50% { border-color: #ff7675; } 100% { border-color: #e74c3c; }
     }
-
     .entry-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border-color);}
     .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;}
     .badge { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #27ae60; color: white;}
@@ -39,14 +40,14 @@
     .quick-op-btn:hover { background: #007bff; color: white; border-color: #007bff;}
 
     .split-layout { display: flex; gap: 20px; align-items: flex-start; }
-    .left-panel { flex: 0 0 280px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .left-panel { flex: 0 0 300px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
     .right-panel { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg);}
     
     .color-item { display: flex; justify-content: space-between; padding: 10px; background: var(--card-bg); border: 1px solid var(--border-color); margin-bottom: 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 500;}
     .color-item.active { border-left: 4px solid #007bff; background: rgba(0,123,255,0.05); }
     .color-item:hover { background: rgba(0,0,0,0.05); }
     
-    .summary-box { margin-top: 20px; border-top: 2px dashed var(--border-color); padding-top: 15px; }
+    .summary-box { margin-top: 15px; border-top: 2px dashed var(--border-color); padding-top: 15px; }
     .summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 600; color: #555;}
     body.dark-mode .summary-row { color: #ccc; }
     .summary-row.total { font-size: 14px; font-weight: 900; color: #2c3e50; }
@@ -61,12 +62,11 @@
     .btn-action { padding: 10px 25px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px;}
     .btn-new { background: #27ae60; } .btn-update { background: #2980b9; } 
     .btn-copy { background: #8e44ad; } .btn-hold { background: #f39c12; color: #333;} 
-    .btn-clear { background: #7f8c8d; }
-    .btn-danger { background: #e74c3c; }
+    .btn-clear { background: #7f8c8d; } .btn-danger { background: #e74c3c; }
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
     .autocomplete-wrapper { position: relative; width: 100%; }
-    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: var(--card-bg); border: 1px solid #007bff; max-height: 200px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: var(--card-bg); border: 1px solid #007bff; max-height: 200px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
     .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
     
@@ -105,10 +105,12 @@
                     <input type="text" id="job_sequence" class="job-input fast-nav" placeholder="00000" maxlength="5" style="border-radius: 0 4px 4px 0;" onblur="padJobSeq(this)" autofocus>
                 </div>
             </div>
-            <div class="form-group autocomplete-wrapper">
+            <div class="form-group">
                 <label>BUYER <span style="color:#e74c3c;">*</span></label>
-                <input type="text" id="m_buyer" class="form-control fast-nav" placeholder="Type & Select" oninput="suggestBuyer()" autocomplete="off" onblur="validateBuyerWithDelay()">
-                <div id="buyerList" class="autocomplete-list"></div>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="m_buyer" class="form-control fast-nav" placeholder="Type & Select" oninput="suggestBuyer()" autocomplete="off" onblur="validateBuyerWithDelay()">
+                    <div id="buyerList" class="autocomplete-list"></div>
+                </div>
             </div>
             <div class="form-group">
                 <label>STYLE <span style="color:#e74c3c;">*</span></label>
@@ -126,10 +128,12 @@
                     <label>PLAN % <span style="color:#e74c3c;">*</span></label>
                     <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;">
                 </div>
-                <div class="form-group autocomplete-wrapper" style="flex: 1;">
+                <div class="form-group" style="flex: 1;">
                     <label>GAUGE <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" id="m_gauge" class="form-control fast-nav" placeholder="Select" autocomplete="off" readonly style="cursor: pointer; background: #fff;" onclick="showGauges()" onfocus="showGauges()">
-                    <div id="gaugeList" class="autocomplete-list"></div>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="m_gauge" class="form-control fast-nav" placeholder="Select" autocomplete="off" readonly style="cursor: pointer; background: #fff;" onclick="showGauges()" onfocus="showGauges()">
+                        <div id="gaugeList" class="autocomplete-list"></div>
+                    </div>
                 </div>
             </div>
             
@@ -156,7 +160,9 @@
         </div>
     </div>
 
-    <div class="entry-card split-layout">
+    <!-- SPLIT LAYOUT 1: Size Matrix -->
+    <div class="entry-card split-layout" id="sizeSplitLayout">
+        <!-- Left Panel: Color List & Summary -->
         <div class="left-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <strong style="font-size:14px; color:var(--main-text);">COLOR LIST <span style="color:#e74c3c;">*</span></strong>
@@ -165,9 +171,8 @@
             
             <div id="colorContainer"></div>
             
-            <div class="summary-box">
+            <div class="summary-box" style="border-top: 2px solid #27ae60;">
                 <div class="summary-row"><span>Total Color</span> <strong id="sumColor">0</strong></div>
-                <div class="summary-row"><span>Total Lot</span> <strong id="sumLot">0</strong></div>
                 <div class="summary-row"><span>Total Size</span> <strong id="sumSize">0</strong></div>
                 <div class="summary-row total" style="margin-top: 10px;"><span>Total Order Qty</span> <span id="sumOrdQty">0</span></div>
                 <div class="summary-row total" style="color:#27ae60;"><span>Total Plan Qty</span> <span id="sumPlanQty">0</span></div>
@@ -177,24 +182,16 @@
             </div>
         </div>
 
-        <div class="right-panel" id="rightPanel" style="display:none;">
-            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                <div class="form-group" style="flex:1;">
-                    <label>SELECTED COLOR NAME</label>
-                    <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <label style="margin:0;">YARN LOT(S) <span style="color:#e74c3c;">*</span></label> 
-                        <input type="text" id="fastLotInput" class="fast-input" style="width: 160px;" placeholder="+ Type Lot & Enter / Tab" onkeydown="handleLotInput(event)">
-                    </div>
-                    <div id="lotContainer" class="op-tags" style="min-height:35px;"></div>
-                </div>
+        <div class="right-panel">
+            <div class="form-group" style="width: 50%;">
+                <label>SELECTED COLOR NAME</label>
+                <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
             </div>
 
-            <div class="form-group">
+            <!-- Size Matrix -->
+            <div class="form-group" style="margin-top: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
-                    <label style="margin:0;">SIZE DETAILS & MATRIX</label>
+                    <label style="margin:0;"><i class="fa-solid fa-ruler-combined" style="color:#27ae60;"></i> SIZE DETAILS & MATRIX</label>
                     <select id="sizeFormatSelect" class="form-control" style="width:200px;" onchange="loadSizes()">
                         <option value="">-- Auto Generate Sizes --</option>
                         <option value="empty">Empty Custom Size</option>
@@ -203,7 +200,6 @@
                 
                 <table>
                     <thead>
-                        <!-- Updated Matrix Headers -->
                         <tr>
                             <th width="5%">#</th>
                             <th width="15%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
@@ -215,14 +211,44 @@
                             <th width="15%">ACTION</th>
                         </tr>
                     </thead>
-                    <tbody id="sizeTbody"></tbody>
+                    <tbody id="sizeTbody">
+                        <tr><td colspan="8" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>
+                    </tbody>
                     <tfoot id="sizeTfoot"></tfoot>
                 </table>
             </div>
         </div>
     </div>
 
-    <div class="action-bar">
+    <!-- SPLIT LAYOUT 2: Yarn Consumption -->
+    <div class="entry-card split-layout" id="yarnSplitLayout" style="display: none;">
+        <!-- Left Panel: Yarn Live Summary -->
+        <div class="left-panel">
+            <div class="summary-box" style="margin-top: 0; border-top: 2px solid #8e44ad;">
+                <strong style="font-size:13px; color:#8e44ad;"><i class="fa-solid fa-layer-group"></i> YARN LIVE SUMMARY</strong>
+                <div id="yarnLiveSummary" style="margin-top:10px;">
+                    <div style="font-size:12px; color:#7f8c8d; text-align:center;">Select a color to see yarn details.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Yarn Table -->
+        <div class="right-panel">
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+                    <label style="margin:0;"><i class="fa-solid fa-layer-group" style="color:#8e44ad;"></i> YARN CONSUMPTION & LOT DETAILS <span style="color:#e74c3c;">*</span></label>
+                    <button type="button" class="btn-action" style="padding: 5px 15px; font-size:12px; background:#8e44ad;" onclick="addYarn()"><i class="fa-solid fa-plus"></i> Add Yarn</button>
+                </div>
+                <div id="yarnContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; color: #7f8c8d; font-size: 11px; font-weight: bold; margin-bottom: 5px;">
+        <i class="fa-solid fa-keyboard"></i> Shortcut: Press <span style="color:#e74c3c; border:1px solid #ccc; padding:2px 5px; border-radius:3px;">F2</span> to Save & Submit
+    </div>
+    
+    <div class="action-bar" style="border:none; padding-top:0;">
         <button class="btn-action btn-new" id="btnSave" onclick="saveKnittingOrder()"><i class="fa-solid fa-paper-plane"></i> Save & Submit</button>
         <button class="btn-action btn-update" id="btnUpdate" style="display:none;" onclick="saveKnittingOrder()"><i class="fa-solid fa-pen-to-square"></i> Update Order</button>
         <button class="btn-action btn-copy" id="btnCopy" style="display:none;" onclick="copyAsNew()"><i class="fa-solid fa-copy"></i> Copy as New</button>
@@ -233,6 +259,7 @@
     </div>
 </div>
 
+<!-- Modal Logic -->
 <div id="reject-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;">
     <div style="background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color);">
         <h3 style="margin-bottom: 15px; color:#e74c3c;">Reason for Rejection</h3>
@@ -248,12 +275,13 @@
     window.isApprovalMode = false;
     window.changedFields = [];
     window.currentSystemId = "";
-
+    
     const dbBuyers = JSON.parse('{{ buyers_json|escapejs }}');
     const dbGauges = JSON.parse('{{ gauges_json|escapejs }}');
     const sizeTemplates = JSON.parse('{{ size_templates_json|escapejs }}');
     const csrfToken = '{{ csrf_token }}';
     
+    // Core Data Structure 
     let orderData = { ops: [], colors: [] }; 
     let actColId = null;
     let searchFocus = -1, buyerFocus = -1, gaugeFocus = -1;
@@ -266,7 +294,6 @@
             opt.innerText = key + ` (${sizeTemplates[key][0]} - ${sizeTemplates[key][sizeTemplates[key].length-1]})`;
             tempSelect.appendChild(opt);
         }
-
         const urlParams = new URLSearchParams(window.location.search);
         const loadSysId = urlParams.get('load_sys_id');
         if(loadSysId) {
@@ -296,20 +323,19 @@
         let rejectModal = document.getElementById('reject-modal');
         if ((globalModal && globalModal.classList.contains('show')) || (rejectModal && rejectModal.style.visibility === 'visible')) return;
 
+        // AutoComplete Navigations
         if (e.target.id === 'globalJobSearch') {
             let list = document.getElementById("globalJobSearchList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); searchFocus++; searchFocus = addActive(items, searchFocus); return; }
             else if (e.key === 'ArrowUp') { e.preventDefault(); searchFocus--; searchFocus = addActive(items, searchFocus); return; }
             else if (e.key === 'Enter') { e.preventDefault(); if (searchFocus > -1 && items) { items[searchFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
-
         if (e.target.id === 'm_buyer') {
             let list = document.getElementById("buyerList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); buyerFocus++; buyerFocus = addActive(items, buyerFocus); return; }
             else if (e.key === 'ArrowUp') { e.preventDefault(); buyerFocus--; buyerFocus = addActive(items, buyerFocus); return; }
             else if (e.key === 'Enter') { e.preventDefault(); if (buyerFocus > -1 && items) { items[buyerFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
-        
         if (e.target.id === 'm_gauge') {
             let list = document.getElementById("gaugeList"); let items = list ? list.getElementsByTagName("div") : null;
             if (e.key === 'ArrowDown') { e.preventDefault(); gaugeFocus++; gaugeFocus = addActive(items, gaugeFocus); return; }
@@ -317,17 +343,9 @@
             else if (e.key === 'Enter') { e.preventDefault(); if (gaugeFocus > -1 && items) { items[gaugeFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
+        // Generic & Matrix & Yarn Vertical Navigation
         if(e.key === 'Enter') {
-            if(e.target.classList.contains('fast-nav')) {
-                e.preventDefault();
-                if(e.target.id === 'job_sequence') padJobSeq(e.target);
-                let navs = Array.from(document.querySelectorAll('.fast-nav'));
-                let idx = navs.indexOf(e.target);
-                if (idx > -1 && idx < navs.length - 1) { navs[idx + 1].focus(); navs[idx + 1].select(); }
-                else if (idx === navs.length - 1) { document.getElementById('fastColorInput').focus(); }
-            }
-            
-            // Matrix Navigation Logic Updated for Bundle
+            // Matrix Quantity Jump
             if (e.target.classList.contains('matrix-qty')) {
                 e.preventDefault(); 
                 let qtys = Array.from(document.querySelectorAll('.matrix-qty'));
@@ -337,32 +355,104 @@
                     let firstWt = document.querySelector('.matrix-wt');
                     if(firstWt) { firstWt.focus(); firstWt.select(); }
                 }
+                return; 
             }
+            // Matrix Weight Jump
             if (e.target.classList.contains('matrix-wt')) {
                 e.preventDefault(); 
                 let wts = Array.from(document.querySelectorAll('.matrix-wt'));
                 let idx = wts.indexOf(e.target); 
                 if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
                 else if (idx === wts.length - 1) {
-                    // Jump from last WT to first Bundle QTY
                     let firstBndl = document.querySelector('.matrix-bundle');
                     if(firstBndl) { firstBndl.focus(); firstBndl.select(); }
                 }
+                return; 
             }
+            // Matrix Bundle Jump
             if (e.target.classList.contains('matrix-bundle')) {
                 e.preventDefault(); 
                 let bndls = Array.from(document.querySelectorAll('.matrix-bundle'));
                 let idx = bndls.indexOf(e.target); 
-                // Jump from current Bundle to next Bundle
                 if (idx > -1 && idx < bndls.length - 1) { bndls[idx + 1].focus(); bndls[idx + 1].select(); }
+                return; 
+            }
+
+            // --- YARN VERTICAL NAVIGATION LOGIC ---
+            // 1. Yarn Name Jump
+            if (e.target.classList.contains('yarn-name-input')) {
+                e.preventDefault();
+                let inputs = Array.from(document.querySelectorAll('.yarn-name-input'));
+                let idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                else if (idx === inputs.length - 1) {
+                    let nextCol = document.querySelector('.yarn-cons-input');
+                    if(nextCol) { nextCol.focus(); nextCol.select(); }
+                }
+                return;
+            }
+            // 2. Yarn Cons Jump
+            if (e.target.classList.contains('yarn-cons-input')) {
+                e.preventDefault();
+                let inputs = Array.from(document.querySelectorAll('.yarn-cons-input'));
+                let idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                else if (idx === inputs.length - 1) {
+                    let nextCol = document.querySelector('.yarn-allow-input');
+                    if(nextCol) { nextCol.focus(); nextCol.select(); }
+                }
+                return;
+            }
+            // 3. Yarn Allow Jump
+            if (e.target.classList.contains('yarn-allow-input')) {
+                e.preventDefault();
+                let inputs = Array.from(document.querySelectorAll('.yarn-allow-input'));
+                let idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                else if (idx === inputs.length - 1) {
+                    // Jump to first Yarn's Lot input
+                    let c = orderData.colors.find(x => x.id === actColId);
+                    if(c && c.yarns.length > 0) {
+                        c.yarns[0].showLotInput = true; // force show first lot input
+                        renderYarns(c); calcAll();
+                        setTimeout(() => {
+                            let nextCol = document.getElementById(`add_lot_name_${c.yarns[0].id}`);
+                            if(nextCol) { nextCol.focus(); nextCol.select(); }
+                        }, 50);
+                    }
+                }
+                return;
+            }
+            // 4. Lot Name to Lot Lbs (Horizontal within same row)
+            if (e.target.classList.contains('lot-name-input')) {
+                e.preventDefault();
+                let yId = e.target.id.replace('add_lot_name_', '');
+                let nextCol = document.getElementById(`add_lot_lbs_${yId}`);
+                if(nextCol) { nextCol.focus(); nextCol.select(); }
+                return;
+            }
+            // 5. Lot Lbs Enter -> Add lot, then jump to NEXT yarn's lot name
+            if (e.target.classList.contains('lot-lbs-input')) {
+                e.preventDefault();
+                let yId = e.target.id.replace('add_lot_lbs_', '');
+                addLotFromRow(yId, true); // true = jump to next yarn
+                return;
+            }
+
+            // Normal Top Fields Jump
+            if(e.target.classList.contains('fast-nav')) {
+                e.preventDefault();
+                if(e.target.id === 'job_sequence') padJobSeq(e.target);
+                let navs = Array.from(document.querySelectorAll('.fast-nav'));
+                let idx = navs.indexOf(e.target);
+                if (idx > -1 && idx < navs.length - 1) { navs[idx + 1].focus(); navs[idx + 1].select(); }
+                else if (idx === navs.length - 1) { document.getElementById('fastColorInput').focus(); }
             }
         }
+        
+        // F2 Shortcut for Save
+        if(e.key === 'F2') { e.preventDefault(); saveKnittingOrder(); return; }
     });
-
-    function handleLotInput(e) {
-        if(e.key === 'Enter') { e.preventDefault(); addLot(e.target.value); e.target.value = ''; } 
-        else if (e.key === 'Tab') { e.preventDefault(); document.getElementById('sizeFormatSelect').focus(); }
-    }
 
     function searchGlobalJob(query) {
         searchFocus = -1;
@@ -398,7 +488,6 @@
         });
         list.style.display = matches.length ? 'block' : 'none';
     }
-    
     function validateBuyerWithDelay() {
         setTimeout(() => {
             let val = document.getElementById('m_buyer').value.trim();
@@ -435,12 +524,14 @@
     function renderOps() { document.getElementById('opContainer').innerHTML = orderData.ops.map(o => `<div class="tag">${o} <span onclick="delOp('${o}')"><i class="fa-solid fa-xmark"></i></span></div>`).join(''); }
 
     function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+    // --- Core Logic: Color > Size > Yarn > Lots ---
     function createColor(n) { 
         n = n.trim(); 
         if(n) { 
             if(orderData.colors.some(c => c.name.toLowerCase() === n.toLowerCase())) { showModal(`Color '${n}' already exists!`); return; }
-            let c = { id: generateId(), name: n, lots: [], sizes: [], totalLbs: 0 }; 
-            orderData.colors.push(c); actColId = c.id; renderColors(); openRight(); document.getElementById('fastLotInput').focus(); 
+            let c = { id: generateId(), name: n, sizes: [], yarns: [{id: generateId(), name: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true}], totalLbs: 0 }; 
+            orderData.colors.push(c); actColId = c.id; renderColors(); openRight(); 
         } 
     }
     
@@ -461,14 +552,21 @@
     function delCol(id) { orderData.colors = orderData.colors.filter(c => c.id !== id); actColId = orderData.colors.length > 0 ? orderData.colors[0].id : null; renderColors(); openRight(); }
     
     function openRight() { 
-        let p = document.getElementById('rightPanel'); 
-        if(!actColId) { p.style.display = 'none'; return; } 
-        p.style.display = 'block'; 
+        if(!actColId) { 
+            document.getElementById('currColorName').value = '';
+            document.getElementById('sizeTbody').innerHTML = `<tr><td colspan="8" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>`;
+            document.getElementById('sizeTfoot').innerHTML = '';
+            document.getElementById('yarnSplitLayout').style.display = 'none';
+            return; 
+        } 
         let c = orderData.colors.find(x => x.id === actColId); 
         document.getElementById('currColorName').value = c.name; 
         document.getElementById('sizeFormatSelect').value = ""; 
-        renderLots(c); renderSizes(c); 
+        document.getElementById('yarnSplitLayout').style.display = 'flex';
+        renderSizes(c); 
+        renderYarns(c);
     }
+
     function updateColName() { 
         let newName = document.getElementById('currColorName').value.trim();
         if(newName && !orderData.colors.some(c => c.id !== actColId && c.name.toLowerCase() === newName.toLowerCase())) {
@@ -476,23 +574,11 @@
         } else if(newName) { showModal("This color name already exists!"); document.getElementById('currColorName').value = orderData.colors.find(c => c.id === actColId).name; }
     }
     
-    function addLot(n) { 
-        n = n.trim(); 
-        if(n) { 
-            let c = orderData.colors.find(c => c.id === actColId);
-            if(c.lots.some(l => l.toLowerCase() === n.toLowerCase())) { showModal(`Lot '${n}' already exists in this color!`); return; }
-            c.lots.push(n); openRight(); calcAll(); 
-        } 
-    }
-    function delLot(idx) { orderData.colors.find(c => c.id === actColId).lots.splice(idx, 1); openRight(); calcAll(); }
-    function renderLots(c) { document.getElementById('lotContainer').innerHTML = c.lots.map((l, i) => `<div class="tag" style="background:#8e44ad;">${l} <span onclick="delLot(${i})"><i class="fa-solid fa-xmark"></i></span></div>`).join(''); }
-    
     function loadSizes() { 
         let f = document.getElementById('sizeFormatSelect').value; 
         if(!f || !actColId) return; 
         let c = orderData.colors.find(x => x.id === actColId); 
         let sizesArr = f === 'empty' ? [''] : sizeTemplates[f];
-        // ADDED bundleQty initialization
         c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, sWeight: "", lbs: 0, bundleQty: "", sort: 1 })); 
         renderSizes(c); calcAll(); 
         setTimeout(() => { let firstQty = document.querySelector('.matrix-qty'); if(firstQty) firstQty.focus(); }, 100);
@@ -504,7 +590,7 @@
             let safeSName = s.name.replace(/\s+/g, '_');
             let qId = `qty_${safeCName}_${safeSName}`;
             let wId = `wt_${safeCName}_${safeSName}`;
-            let bId = `bndl_${safeCName}_${safeSName}`; // Highlight tracking for Bundle
+            let bId = `bndl_${safeCName}_${safeSName}`;
             
             let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : '';
             let wHi = (window.isApprovalMode && window.changedFields.includes(wId)) ? 'highlight-change' : '';
@@ -514,18 +600,11 @@
             <tr>
                 <td>${i+1}</td>
                 <td><input type="text" class="td-input" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
-                
                 <td><input type="text" id="${qId}" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
-                
                 <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
-                
                 <td><input type="text" id="${wId}" class="td-input matrix-wt ${wHi}" value="${s.sWeight}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateWt('${s.id}', this.value)"></td>
-                
                 <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
-                
-                <!-- NEW: Bundle QTY Column -->
                 <td><input type="text" id="${bId}" class="td-input matrix-bundle ${bHi}" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
-                
                 <td>
                     <button class="btn-circle btn-plus" style="margin-right:10px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
                     <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
@@ -540,44 +619,249 @@
     function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); }
     function updateWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.sWeight = parseInt(val) || 0; calcAll(); }
     function updateBundle(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bundleQty = val ? parseInt(val) : ""; }
+
+    // --- Modern Yarn & Lot Management ---
+    function addYarn() {
+        let c = orderData.colors.find(x => x.id === actColId);
+        c.yarns.push({id: generateId(), name: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true});
+        renderYarns(c); calcAll();
+    }
+    function delYarn(yId) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        c.yarns = c.yarns.filter(y => y.id !== yId);
+        renderYarns(c); calcAll();
+    }
+    function updateYarn(yId, field, val) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        let y = c.yarns.find(x => x.id === yId);
+        if (field === 'consPct' || field === 'allowPct') {
+            y[field] = val; 
+            calcAll(); 
+        } else {
+            y[field] = val;
+            calcAll(); 
+        }
+    }
     
+    // Show Lot Input manually if user clicks [+]
+    function showLotInput(yId) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        let y = c.yarns.find(x => x.id === yId);
+        y.showLotInput = true;
+        renderYarns(c);
+        setTimeout(() => document.getElementById(`add_lot_name_${y.id}`).focus(), 50);
+    }
+
+    // Auto-Add Lot Function (Hit Enter or Click +)
+    function addLotFromRow(yId, jumpToNextYarn = false) {
+        let nameInp = document.getElementById(`add_lot_name_${yId}`);
+        let lbsInp = document.getElementById(`add_lot_lbs_${yId}`);
+        let lName = nameInp.value.trim();
+        let lLbs = lbsInp.value.trim();
+        
+        if(lName && lLbs) {
+            let c = orderData.colors.find(x => x.id === actColId);
+            let yIdx = c.yarns.findIndex(x => x.id === yId);
+            let y = c.yarns[yIdx];
+            
+            y.lots.push({id: generateId(), lotName: lName, lbs: lLbs});
+            y.showLotInput = false; // Hide current
+            
+            let nextFocusId = null;
+            if (jumpToNextYarn) {
+                if (yIdx < c.yarns.length - 1) {
+                    let nextY = c.yarns[yIdx + 1];
+                    nextY.showLotInput = true; // Show next
+                    nextFocusId = `add_lot_name_${nextY.id}`;
+                } else {
+                    nextFocusId = null; // Don't go to save. Just stay or blur.
+                }
+            } else {
+                y.showLotInput = true; // Keep it open for same yarn
+                nextFocusId = `add_lot_name_${y.id}`;
+            }
+            
+            renderYarns(c); calcAll();
+            
+            if (nextFocusId) {
+                setTimeout(() => {
+                    let el = document.getElementById(nextFocusId);
+                    if(el) { el.focus(); if (el.tagName === 'INPUT') el.select(); }
+                }, 50);
+            } else {
+                if (document.activeElement) document.activeElement.blur();
+            }
+        } else {
+            showModal("Please enter both Lot Name and Lbs.");
+        }
+    }
+
+    function delYarnLot(yId, lId) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        let y = c.yarns.find(x => x.id === yId);
+        y.lots = y.lots.filter(l => l.id !== lId);
+        renderYarns(c); calcAll();
+    }
+
+    function renderYarns(c) {
+        let html = `<table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th width="20%">YARN NAME <span style="color:#e74c3c;">*</span></th>
+                    <th width="10%">CONS. (%) <span style="color:#e74c3c;">*</span></th>
+                    <th width="10%">ALLOW. (%) <span style="color:#e74c3c;">*</span></th>
+                    <th width="12%">REQ. YARN (Lbs)</th>
+                    <th width="43%" style="text-align:left; padding-left:15px;">LOTS & ALLOCATED LBS <span style="color:#e74c3c;">*</span></th>
+                    <th width="5%">DEL</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if(c.yarns.length === 0) {
+            html += `<tr><td colspan="6" style="color:#aaa; font-style:italic;">No yarns added yet.</td></tr>`;
+        }
+
+        c.yarns.forEach((y, yIdx) => {
+            let safeCName = c.name.replace(/\s+/g, '_');
+            
+            let nameHi = (window.isApprovalMode && window.changedFields.includes(`y_name_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
+            let consHi = (window.isApprovalMode && window.changedFields.includes(`y_cons_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
+            let allowHi = (window.isApprovalMode && window.changedFields.includes(`y_allow_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
+            let reqHi = (window.isApprovalMode && window.changedFields.includes(`y_req_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
+
+            // Generate Tags for existing lots
+            let lotsHtml = y.lots.map((l, lIdx) => {
+                let lNameHi = (window.isApprovalMode && window.changedFields.includes(`l_name_${safeCName}_${yIdx}_${lIdx}`)) ? 'highlight-change' : '';
+                let lLbsHi = (window.isApprovalMode && window.changedFields.includes(`l_lbs_${safeCName}_${yIdx}_${lIdx}`)) ? 'highlight-change' : '';
+                let tagClass = (lNameHi || lLbsHi) ? 'highlight-change' : '';
+                return `<span class="tag ${tagClass}" style="background:#8e44ad; font-size:11px; padding:4px 8px; margin-bottom:5px;">
+                            ${l.lotName}: ${l.lbs} Lbs 
+                            <i class="fa-solid fa-times" style="cursor:pointer; margin-left:6px; color:#ffb8b8;" onclick="delYarnLot('${y.id}', '${l.id}')"></i>
+                        </span>`;
+            }).join('');
+
+            html += `
+            <tr style="background: rgba(0,0,0,0.02);">
+                <td><input type="text" class="td-input yarn-name-input ${nameHi}" value="${y.name}" placeholder="e.g. 2/32 Acrylic" oninput="updateYarn('${y.id}', 'name', this.value)"></td>
+                <td><input type="text" class="td-input yarn-cons-input ${consHi}" value="${y.consPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'consPct', this.value)"></td>
+                <td><input type="text" class="td-input yarn-allow-input ${allowHi}" value="${y.allowPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'allowPct', this.value)"></td>
+                <td id="reqLbs_${y.id}" class="${reqHi}" style="font-weight:bold; color:#e74c3c; font-size:14px;">${y.reqLbs}</td>
+                
+                <td style="text-align:left; padding: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                            ${lotsHtml}
+                            ${y.showLotInput ? `
+                                <div style="display:flex; gap:5px; align-items:center;">
+                                    <input type="text" id="add_lot_name_${y.id}" class="td-input lot-name-input" placeholder="+ Lot Name" style="font-size:11px; width:100px;">
+                                    <input type="text" id="add_lot_lbs_${y.id}" class="td-input lot-lbs-input" placeholder="Lbs" style="font-size:11px; width:70px;" oninput="this.value=this.value.replace(/[^0-9.]/g,'');">
+                                    <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#27ae60;" onclick="addLotFromRow('${y.id}', false)" title="Add & Stay"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            ` : ``}
+                        </div>
+                        ${!y.showLotInput ? `
+                            <button class="btn-action" style="padding:3px 10px; font-size:11px; background:#8e44ad; margin-left:auto;" onclick="showLotInput('${y.id}')"><i class="fa-solid fa-plus"></i> Add Lot</button>
+                        ` : ``}
+                    </div>
+                </td>
+                
+                <td>
+                    <button class="btn-circle btn-minus" onclick="delYarn('${y.id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+
+        html += `
+            </tbody>
+            <tfoot id="yarnTfoot">
+                <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid var(--border-color);">
+                    <td style="text-align:right;">YARN TOTAL:</td>
+                    <td id="yarnTotalCons" style="font-size:14px;">0%</td>
+                    <td></td>
+                    <td id="yarnTotalReq" style="color:#e74c3c; font-size:14px;">0</td>
+                    <td id="yarnTotalAlloc" style="font-size:14px; text-align:left; padding-left:15px;">0 Lbs (Total Allocated)</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>`;
+        document.getElementById('yarnContainer').innerHTML = html;
+    }
+
     function calcAll() { 
         let pct = parseFloat(document.getElementById('m_planPct').value) || 0; 
         document.getElementById('displayPct').innerText = pct;
         
-        let tCol = 0, tLot = 0, tSize = 0, tOrdQty = 0, tPlanQty = 0, tGrandLbs = 0; 
+        let tCol = 0, tSize = 0, tOrdQty = 0, tPlanQty = 0, tGrandLbs = 0; 
         let tableOrd = 0, tablePlan = 0, tableLbs = 0;
-
+        
         orderData.colors.forEach(c => { 
-            tCol++; tLot += c.lots.length; tSize += c.sizes.length; 
+            tCol++; tSize += c.sizes.length; 
             let cTotalLbs = 0; 
             c.sizes.forEach((s, idx) => { 
                 s.sort = idx + 1;
-                s.pQty = Math.ceil(s.oQty + (s.oQty * (pct/100))); 
+                // Perfect Rounding Logic: 0.50+ is rounded up
+                s.pQty = Math.round(s.oQty * (1 + (pct/100))); 
                 tOrdQty += s.oQty; tPlanQty += s.pQty; 
-                let td = document.getElementById('pQty_' + s.id); if(td) td.innerText = s.pQty; 
+                let td = document.getElementById('pQty_' + s.id); if(td) td.innerText = s.pQty;
                 
                 let rowLbs = 0; 
                 if(s.sWeight > 0 && s.pQty > 0) rowLbs = Math.round((s.sWeight * s.pQty) / 453.592); 
                 s.lbs = rowLbs;
                 let tdLbs = document.getElementById('lbs_' + s.id); if(tdLbs) tdLbs.innerText = rowLbs; 
                 cTotalLbs += rowLbs; 
-
                 if(c.id === actColId) { tableOrd += s.oQty; tablePlan += s.pQty; tableLbs += rowLbs; }
             }); 
-            c.totalLbs = cTotalLbs; tGrandLbs += cTotalLbs; 
+            c.totalLbs = cTotalLbs; tGrandLbs += cTotalLbs;
+            
+            // Calculate Yarn Required Lbs dynamically (No decimals)
+            let cTotalCons = 0;
+            let cTotalReq = 0;
+            let cTotalAlloc = 0;
+
+            c.yarns.forEach(y => {
+                let cons = parseFloat(y.consPct) || 0;
+                let allow = parseFloat(y.allowPct) || 0;
+                y.reqLbs = Math.round(cTotalLbs * (cons / 100) * (1 + (allow / 100)));
+                
+                cTotalCons += cons;
+                cTotalReq += y.reqLbs;
+
+                let yTotalAlloc = 0;
+                y.lots.forEach(l => { yTotalAlloc += parseFloat(l.lbs) || 0; });
+                cTotalAlloc += yTotalAlloc;
+                
+                let yTd = document.getElementById('reqLbs_' + y.id);
+                if(yTd) yTd.innerText = y.reqLbs;
+            });
+            
+            // Update Yarn Footer
+            if(c.id === actColId) {
+                cTotalCons = Math.round(cTotalCons * 100) / 100;
+                let footCons = document.getElementById('yarnTotalCons');
+                let footReq = document.getElementById('yarnTotalReq');
+                let footAlloc = document.getElementById('yarnTotalAlloc');
+                
+                if (footCons) {
+                    footCons.innerText = cTotalCons + "%";
+                    footCons.style.color = (cTotalCons === 100) ? '#27ae60' : '#e74c3c';
+                }
+                if (footReq) footReq.innerText = cTotalReq;
+                if (footAlloc) {
+                    footAlloc.innerText = cTotalAlloc + " Lbs (Total Allocated)";
+                    footAlloc.style.color = (cTotalAlloc === cTotalReq) ? '#27ae60' : '#e74c3c';
+                }
+            }
             
             let lbsEl = document.getElementById('col_lbs_' + c.id); 
             if(lbsEl) lbsEl.innerText = cTotalLbs + " Lbs";
         }); 
         
         document.getElementById('sumColor').innerText = tCol; 
-        document.getElementById('sumLot').innerText = tLot; 
         document.getElementById('sumSize').innerText = tSize; 
         document.getElementById('sumOrdQty').innerText = tOrdQty.toLocaleString(); 
         document.getElementById('sumPlanQty').innerText = tPlanQty.toLocaleString(); 
         document.getElementById('sumTotalLbs').innerText = tGrandLbs.toLocaleString(); 
-
+        
         if (actColId) {
             let avgDzWt = tablePlan > 0 ? ((tableLbs / tablePlan) * 12).toFixed(2) : "0.00";
             document.getElementById('sizeTfoot').innerHTML = `
@@ -590,6 +874,64 @@
                     <td colspan="2"></td>
                 </tr>
             `;
+            
+            // Update Yarn Live Summary
+            let activeColor = orderData.colors.find(c => c.id === actColId);
+            let yHtml = '';
+            
+            let masterReq = 0;
+            let masterAlloc = 0;
+
+            activeColor.yarns.forEach(y => {
+                let yName = y.name || 'Unnamed Yarn';
+                let totalLots = y.lots.reduce((s, l) => s + (parseFloat(l.lbs)||0), 0);
+                let matchColor = totalLots === y.reqLbs ? '#27ae60' : '#e74c3c';
+                let reqLbsStr = y.reqLbs || 0;
+                
+                masterReq += y.reqLbs;
+                masterAlloc += totalLots;
+                
+                yHtml += `
+                <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 4px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12px; color:#2c3e50; margin-bottom: 5px;">
+                        <span>${yName} (${y.consPct || 0}%)</span>
+                        <span>Req: ${reqLbsStr} Lbs</span>
+                    </div>
+                    <div style="font-size: 11px; color: #555;">`;
+                
+                if(y.lots.length > 0) {
+                    y.lots.forEach(l => {
+                        yHtml += `<div style="display:flex; justify-content:space-between; padding-left: 10px; border-left: 2px solid #ccc; margin-bottom:2px;">
+                            <span>Lot: ${l.lotName || '-'}</span> <span>${l.lbs || 0} Lbs</span>
+                        </div>`;
+                    });
+                    yHtml += `<div style="display:flex; justify-content:space-between; padding-left: 10px; border-left: 2px solid ${matchColor}; margin-top:4px; font-weight:bold; color:${matchColor};">
+                        <span>Allocated Total:</span> <span>${totalLots} Lbs</span>
+                    </div>`;
+                } else {
+                    yHtml += `<span style="color:#e74c3c; font-style:italic;">No lots added</span>`;
+                }
+                yHtml += `</div></div>`;
+            });
+
+            if (activeColor.yarns.length > 0) {
+                let mMatchColor = masterReq === masterAlloc ? '#27ae60' : '#e74c3c';
+                yHtml += `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 2px dashed #8e44ad;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:#2c3e50; margin-bottom: 5px;">
+                        <span>Total Required:</span>
+                        <span>${masterReq} Lbs</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:${mMatchColor};">
+                        <span>Total Allocated:</span>
+                        <span>${masterAlloc} Lbs</span>
+                    </div>
+                </div>`;
+            }
+
+            document.getElementById('yarnLiveSummary').innerHTML = yHtml || '<div style="font-size:12px; color:#7f8c8d; text-align:center;">No yarns added yet.</div>';
+        } else {
+            document.getElementById('yarnLiveSummary').innerHTML = '<div style="font-size:12px; color:#7f8c8d; text-align:center;">Select a color to see yarn details.</div>';
         }
     }
 
@@ -614,20 +956,25 @@
                 
                 orderData.ops = d.operations ? d.operations.split(',').map(s=>s.trim()) : [];
                 renderOps();
-
                 orderData.colors = [];
                 d.colors.forEach(c => {
-                    let col = { id: generateId(), name: c.name, lots: c.lots ? c.lots.split(',').map(s=>s.trim()) : [], sizes: [], totalLbs: 0 };
+                    let col = { id: generateId(), name: c.name, sizes: [], yarns: [], totalLbs: 0 };
                     c.sizes.forEach(sz => {
-                        // LOAD BUNDLE QTY
                         col.sizes.push({ id: generateId(), name: sz.name, oQty: sz.oQty, pQty: sz.pQty, sWeight: sz.sWeight, lbs: parseFloat(sz.lbs), bundleQty: sz.bundleQty || "", sort: 1 });
+                    });
+                    c.yarns.forEach(y => {
+                        let yarnObj = { id: generateId(), name: y.name, consPct: y.consPct, allowPct: y.allowPct, reqLbs: parseInt(y.reqLbs), lots: [], showLotInput: y.lots.length === 0 };
+                        y.lots.forEach(l => {
+                            yarnObj.lots.push({ id: generateId(), lotName: l.lotName, lbs: l.lbs });
+                        });
+                        col.yarns.push(yarnObj);
                     });
                     orderData.colors.push(col);
                 });
                 
                 actColId = orderData.colors.length > 0 ? orderData.colors[0].id : null;
                 renderColors(); openRight(); calcAll();
-
+                
                 document.querySelectorAll('.highlight-change').forEach(el => el.classList.remove('highlight-change'));
                 if (window.isApprovalMode && window.changedFields.length > 0) {
                     window.changedFields.forEach(fieldId => {
@@ -635,7 +982,6 @@
                         if(el) el.classList.add('highlight-change');
                     });
                 }
-
                 document.getElementById('systemIdDisplay').style.display = 'inline-block';
                 document.getElementById('s_id_val').innerText = d.system_id;
                 document.getElementById('btnSave').style.display = 'none';
@@ -645,7 +991,6 @@
                     rBanner.style.display = 'block';
                     rBanner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <b>THIS ORDER WAS REJECTED!</b><br><span style="font-weight:normal; font-size:13px; color:#555; display:block; margin-top:5px;">Reason: ${d.reject_reason || "No reason provided."}</span>`;
                 } else { rBanner.style.display = 'none'; }
-
                 if(window.isApprovalMode) {
                     document.getElementById('btnApprove').style.display = 'inline-block';
                     document.getElementById('btnReject').style.display = 'inline-block';
@@ -664,7 +1009,7 @@
 
     function copyAsNew() {
         document.getElementById('job_sequence').value = "";
-        window.currentSystemId = ""; // Reset SYS ID
+        window.currentSystemId = ""; 
         document.getElementById('systemIdDisplay').style.display = 'none';
         document.getElementById('s_id_val').innerText = "";
         document.getElementById('btnUpdate').style.display = 'none';
@@ -697,9 +1042,8 @@
 
     function openRejectModal() { 
         document.getElementById('reject-modal').style.visibility = 'visible'; 
-        document.getElementById('reject-modal').style.opacity = '1';
+        document.getElementById('reject-modal').style.opacity = '1'; 
     }
-
     function submitReject() {
         let reason = document.getElementById('reject_reason_text').value.trim();
         if(!reason) { alert("Please provide a reason for rejection."); return; }
@@ -725,36 +1069,76 @@
         if(!document.getElementById('m_kcdDate').value) { showModal("KNITTING CLOSING PLAN Date is missing!"); return; }
         if(!orderData.ops.includes("Body")) { showModal("Mandatory Operation Missing: You must select the 'Body' operation."); return; }
         if(orderData.colors.length === 0) { showModal("Please add at least one Color!"); return; }
-
-        let hasMatrixError = false;
+        
+        let hasError = false;
         orderData.colors.forEach(c => {
-            if(c.lots.length === 0) { showModal(`Yarn Lot is missing for color: ${c.name}`); hasMatrixError = true; }
+            if(c.sizes.length === 0) { showModal(`Please add sizes for color: ${c.name}`); hasError = true; }
             c.sizes.forEach(sz => {
-                if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasMatrixError = true; }
-                if(!sz.oQty || sz.oQty <= 0) { showModal(`ORDER QTY is required for size: ${sz.name} in color: ${c.name}`); hasMatrixError = true; }
-                if(!sz.sWeight || sz.sWeight <= 0) { showModal(`SIZE WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasMatrixError = true; }
+                if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasError = true; }
+                if(!sz.oQty || sz.oQty <= 0) { showModal(`ORDER QTY is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
+                if(!sz.sWeight || sz.sWeight <= 0) { showModal(`SIZE WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
             });
+            
+            if(c.yarns.length === 0) { showModal(`Please add at least one Yarn for color: ${c.name}`); hasError = true; }
+            
+            let totalCons = 0;
+            c.yarns.forEach(y => {
+                if(!y.name.trim()) { showModal(`Yarn name is missing in color: ${c.name}`); hasError = true; }
+                if(y.consPct === '') { showModal(`Consumption % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
+                if(y.allowPct === '') { showModal(`Allowance % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
+                
+                let cons = parseFloat(y.consPct) || 0;
+                totalCons += cons;
+                
+                let totalLotLbs = 0;
+                y.lots.forEach(l => {
+                    let lbsVal = parseFloat(l.lbs) || 0;
+                    totalLotLbs += lbsVal;
+                });
+                
+                // EXACT LBS MATCH VALIDATION
+                if(y.lots.length > 0 && Math.round(totalLotLbs) !== Math.round(y.reqLbs)) {
+                    showModal(`Mismatch Error!\nColor: ${c.name}\nYarn: ${y.name}\nRequired Lbs: ${Math.round(y.reqLbs)}\nAllocated Lots Total: ${Math.round(totalLotLbs)}\n\nYou must exactly match the required Lbs.`);
+                    hasError = true;
+                }
+            });
+            
+            // EXACT 100% CONSUMPTION VALIDATION
+            if(c.yarns.length > 0) {
+                let checkCons = Math.round(totalCons * 100) / 100;
+                if(checkCons !== 100) {
+                    showModal(`Consumption % Error!\nColor: ${c.name}\nTotal Consumption is ${checkCons}%.\nIt must be exactly 100%.`);
+                    hasError = true;
+                }
+            }
         });
-        if(hasMatrixError) return;
+        if(hasError) return;
 
         let prefix = document.querySelector('.job-prefix').innerText.replace('-', '');
         let jobNo = prefix + '-' + document.getElementById('job_year').value + '-' + document.getElementById('job_sequence').value;
         let poList = document.getElementById('m_po').value.split(',').map(s=>s.trim()).filter(s=>s);
         let bName = document.getElementById('m_buyer').value.trim();
-
+        
         let tPlan = parseInt(document.getElementById('sumPlanQty').innerText.replace(/,/g, '')) || 0;
         let tLbs = parseFloat(document.getElementById('sumTotalLbs').innerText.replace(/,/g, '')) || 0;
         let avgWtDz = tPlan > 0 ? ((tLbs / tPlan) * 12).toFixed(2) : 0;
-
+        
         let payload = {
             system_id: window.currentSystemId,
             job_no: jobNo, buyer_name: bName, style_no: document.getElementById('m_style').value, po_list: poList.join(', '),
             plan_pct: parseInt(document.getElementById('m_planPct').value) || 0, gauge: document.getElementById('m_gauge').value,
             kcd_date: document.getElementById('m_kcdDate').value, operations: orderData.ops.join(', '),
-            total_color: parseInt(document.getElementById('sumColor').innerText), total_lot: parseInt(document.getElementById('sumLot').innerText),
+            total_color: parseInt(document.getElementById('sumColor').innerText), 
             total_size: parseInt(document.getElementById('sumSize').innerText), total_order_qty: parseInt(document.getElementById('sumOrdQty').innerText.replace(/,/g, '')),
             total_plan_qty: tPlan, total_lbs: tLbs, avg_wt: avgWtDz,
-            colors: orderData.colors.map(c => ({ name: c.name, lots: c.lots.join(', '), sizes: c.sizes }))
+            colors: orderData.colors.map(c => ({ 
+                name: c.name, 
+                sizes: c.sizes,
+                yarns: c.yarns.map(y => ({
+                    name: y.name, consPct: y.consPct, allowPct: y.allowPct, reqLbs: y.reqLbs,
+                    lots: y.lots.map(l => ({ lotName: l.lotName, lbs: parseFloat(l.lbs) || 0 }))
+                }))
+            }))
         };
 
         fetch("{% url 'save_knitting_order_ajax' %}", {

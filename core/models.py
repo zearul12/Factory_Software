@@ -82,7 +82,18 @@ class KnittingOrder(models.Model):
 class KnittingColor(models.Model):
     order = models.ForeignKey(KnittingOrder, on_delete=models.CASCADE, related_name='colors')
     color_name = models.CharField(max_length=100)
-    lots = models.TextField() # কমা দিয়ে সেভ হবে (A15, B20)
+
+class KnittingYarn(models.Model):
+    color = models.ForeignKey(KnittingColor, on_delete=models.CASCADE, related_name='yarns')
+    yarn_name = models.CharField(max_length=150)
+    consumption_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    allowance_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0) # New Field
+    req_weight_lbs = models.IntegerField(default=0) # Changed to Integer (No decimals)
+
+class KnittingYarnLot(models.Model):
+    yarn = models.ForeignKey(KnittingYarn, on_delete=models.CASCADE, related_name='lots')
+    lot_name = models.CharField(max_length=100)
+    allocated_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
 class KnittingSize(models.Model):
     color = models.ForeignKey(KnittingColor, on_delete=models.CASCADE, related_name='sizes')

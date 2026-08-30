@@ -6,18 +6,20 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.db import transaction
 from django.db.models import Q
-from core.models import AppSetting, Buyer, KnittingOrder, KnittingColor, KnittingSize, PageApprover, SystemNotification
+from core.models import AppSetting, Buyer, KnittingOrder, KnittingColor, KnittingSize, KnittingYarn, KnittingYarnLot, PageApprover, SystemNotification
 
 @login_required(login_url='login')
 def knitting_order_entry_view(request):
     size_settings = AppSetting.objects.filter(key__istartswith='Size_temp_')
     size_templates = {s.key: [sz.strip() for sz in s.value.split(',')] for s in size_settings}
     buyers = list(Buyer.objects.filter(is_active=True).values_list('buyer_name', flat=True))
+    
     op_setting = AppSetting.objects.filter(key='quick_operations').first()
     quick_ops = [op.strip() for op in op_setting.value.split(',')] if op_setting else ['Body', 'Neck', 'Piping', 'Waistband']
+    
     gauge_setting = AppSetting.objects.filter(key='machine_gauges').first()
     gauges = [g.strip() for g in gauge_setting.value.split(',')] if gauge_setting else ['3G', '5G', '7G', '12G', '14G']
-
+    
     prefix_obj = AppSetting.objects.filter(key='job_prefix').first()
     job_prefix = prefix_obj.value.strip() if prefix_obj else 'PSL'
     current_year = datetime.date.today().strftime('%y')
@@ -50,6 +52,14 @@ def search_knitting_job_ajax(request):
         results = []
     return JsonResponse(results, safe=False)
 
+def to_f(v):
+    try: return float(v)
+    except: return 0.0
+
+def to_i(v):
+    try: return int(v)
+    except: return 0
+
 @login_required
 @transaction.atomic
 def save_knitting_order_ajax(request):
@@ -74,26 +84,42 @@ def save_knitting_order_ajax(request):
                 if str(order.kcd_date) != str(data['kcd_date']): changed.append('m_kcdDate')
                 if str(order.operations) != str(data['operations']): changed.append('opContainer')
                 
-                old_sizes = {}
+                # Check Size & Yarn changes
+                old_data_map = {}
                 if order.colors.exists():
                     for c in order.colors.all():
+                        c_safe = c.color_name.replace(' ', '_')
                         for s in c.sizes.all():
-                            c_safe = c.color_name.replace(' ', '_')
                             s_safe = s.size_name.replace(' ', '_')
-                            old_sizes[f"qty_{c_safe}_{s_safe}"] = s.order_qty
-                            old_sizes[f"wt_{c_safe}_{s_safe}"] = s.size_wt_gm
-                            old_sizes[f"bndl_{c_safe}_{s_safe}"] = s.bundle_qty # Track Bundle
+                            old_data_map[f"qty_{c_safe}_{s_safe}"] = s.order_qty
+                            old_data_map[f"wt_{c_safe}_{s_safe}"] = s.size_wt_gm
+                            old_data_map[f"bndl_{c_safe}_{s_safe}"] = s.bundle_qty
+                        
+                        for y_idx, y in enumerate(c.yarns.all()):
+                            old_data_map[f"y_name_{c_safe}_{y_idx}"] = y.yarn_name
+                            old_data_map[f"y_cons_{c_safe}_{y_idx}"] = to_f(y.consumption_pct)
+                            old_data_map[f"y_allow_{c_safe}_{y_idx}"] = to_f(y.allowance_pct)
+                            old_data_map[f"y_req_{c_safe}_{y_idx}"] = y.req_weight_lbs
+                            for l_idx, lot in enumerate(y.lots.all()):
+                                old_data_map[f"l_name_{c_safe}_{y_idx}_{l_idx}"] = lot.lot_name
+                                old_data_map[f"l_lbs_{c_safe}_{y_idx}_{l_idx}"] = to_f(lot.allocated_lbs)
 
                 for c in data['colors']:
                     c_safe = c['name'].replace(' ', '_')
                     for s in c['sizes']:
                         s_safe = s['name'].replace(' ', '_')
-                        q_key = f"qty_{c_safe}_{s_safe}"
-                        w_key = f"wt_{c_safe}_{s_safe}"
-                        b_key = f"bndl_{c_safe}_{s_safe}"
-                        if q_key not in old_sizes or str(old_sizes[q_key]) != str(s['oQty']): changed.append(q_key)
-                        if w_key not in old_sizes or str(old_sizes[w_key]) != str(s['sWeight']): changed.append(w_key)
-                        if b_key not in old_sizes or str(old_sizes.get(b_key, '0') or '0') != str(s.get('bundleQty') or '0'): changed.append(b_key)
+                        if f"qty_{c_safe}_{s_safe}" not in old_data_map or str(old_data_map[f"qty_{c_safe}_{s_safe}"]) != str(s['oQty']): changed.append(f"qty_{c_safe}_{s_safe}")
+                        if f"wt_{c_safe}_{s_safe}" not in old_data_map or str(old_data_map[f"wt_{c_safe}_{s_safe}"]) != str(s['sWeight']): changed.append(f"wt_{c_safe}_{s_safe}")
+                    
+                    for y_idx, y in enumerate(c.get('yarns', [])):
+                        if f"y_name_{c_safe}_{y_idx}" not in old_data_map or old_data_map[f"y_name_{c_safe}_{y_idx}"] != y['name']: changed.append(f"y_name_{c_safe}_{y_idx}")
+                        if f"y_cons_{c_safe}_{y_idx}" not in old_data_map or old_data_map[f"y_cons_{c_safe}_{y_idx}"] != to_f(y.get('consPct', 0)): changed.append(f"y_cons_{c_safe}_{y_idx}")
+                        if f"y_allow_{c_safe}_{y_idx}" not in old_data_map or old_data_map[f"y_allow_{c_safe}_{y_idx}"] != to_f(y.get('allowPct', 0)): changed.append(f"y_allow_{c_safe}_{y_idx}")
+                        if f"y_req_{c_safe}_{y_idx}" not in old_data_map or old_data_map[f"y_req_{c_safe}_{y_idx}"] != to_i(y.get('reqLbs', 0)): changed.append(f"y_req_{c_safe}_{y_idx}")
+                        
+                        for l_idx, lot in enumerate(y.get('lots', [])):
+                            if f"l_name_{c_safe}_{y_idx}_{l_idx}" not in old_data_map or old_data_map[f"l_name_{c_safe}_{y_idx}_{l_idx}"] != lot['lotName']: changed.append(f"l_name_{c_safe}_{y_idx}_{l_idx}")
+                            if f"l_lbs_{c_safe}_{y_idx}_{l_idx}" not in old_data_map or old_data_map[f"l_lbs_{c_safe}_{y_idx}_{l_idx}"] != to_f(lot.get('lbs', 0)): changed.append(f"l_lbs_{c_safe}_{y_idx}_{l_idx}")
                 
                 if len(changed) == 0:
                     return JsonResponse({'status': 'error', 'message': 'No changes detected! Please modify at least one field to update.'})
@@ -115,7 +141,6 @@ def save_knitting_order_ajax(request):
             order.kcd_date = data['kcd_date']
             order.operations = data['operations']
             order.total_color = data['total_color']
-            order.total_lot = data['total_lot']
             order.total_size = data['total_size']
             order.total_order_qty = data['total_order_qty']
             order.total_plan_qty = data['total_plan_qty']
@@ -125,22 +150,31 @@ def save_knitting_order_ajax(request):
             order.save()
 
             for col_data in data['colors']:
-                col_obj = KnittingColor.objects.create(order=order, color_name=col_data['name'], lots=col_data['lots'])
+                col_obj = KnittingColor.objects.create(order=order, color_name=col_data['name'])
+                
                 for sz_data in col_data['sizes']:
                     KnittingSize.objects.create(
-                        color=col_obj, 
-                        size_name=sz_data['name'], 
-                        order_qty=sz_data['oQty'],
-                        plan_qty=sz_data['pQty'], 
-                        size_wt_gm=sz_data['sWeight'], 
-                        total_lbs=sz_data['lbs'], 
-                        bundle_qty=int(sz_data.get('bundleQty') or 0), # Save Bundle Qty
-                        sort_order=sz_data['sort']
+                        color=col_obj, size_name=sz_data['name'], order_qty=sz_data['oQty'],
+                        plan_qty=sz_data['pQty'], size_wt_gm=sz_data['sWeight'], total_lbs=sz_data['lbs'],
+                        bundle_qty=int(sz_data.get('bundleQty') or 0), sort_order=sz_data['sort']
                     )
+                
+                for y_data in col_data.get('yarns', []):
+                    y_obj = KnittingYarn.objects.create(
+                        color=col_obj, yarn_name=y_data['name'], 
+                        consumption_pct=to_f(y_data.get('consPct')), 
+                        allowance_pct=to_f(y_data.get('allowPct')), 
+                        req_weight_lbs=to_i(y_data.get('reqLbs'))
+                    )
+                    for l_data in y_data.get('lots', []):
+                        KnittingYarnLot.objects.create(
+                            yarn=y_obj, lot_name=l_data['lotName'], allocated_lbs=to_f(l_data.get('lbs'))
+                        )
 
             approvers = list(PageApprover.objects.filter(page_name__icontains="Knitting").values_list('user_id', flat=True))
             superadmins = list(User.objects.filter(is_superuser=True).values_list('id', flat=True))
-            notify_users = set(approvers + superadmins) 
+            notify_users = set(approvers + superadmins)
+            
             notif_title = f"Order Updated: {order.job_no}" if not is_new and order.changed_fields else f"Order Approval: {order.job_no}"
             notif_msg = f"Buyer: {buyer.buyer_name} (Style: {order.style_no}) requires approval."
             
@@ -156,14 +190,31 @@ def save_knitting_order_ajax(request):
 def get_knitting_order_details_ajax(request, sys_id):
     try:
         order = KnittingOrder.objects.get(system_id=sys_id)
+        
+        colors_data = []
+        for c in order.colors.all():
+            sizes = [{'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 'sWeight': s.size_wt_gm, 'lbs': str(s.total_lbs), 'bundleQty': str(s.bundle_qty) if s.bundle_qty else ""} for s in c.sizes.all().order_by('sort_order')]
+            
+            yarns = []
+            for y in c.yarns.all():
+                lots = [{'lotName': l.lot_name, 'lbs': str(l.allocated_lbs).rstrip('0').rstrip('.')} for l in y.lots.all()]
+                yarns.append({
+                    'name': y.yarn_name, 
+                    'consPct': str(y.consumption_pct).rstrip('0').rstrip('.') if y.consumption_pct else '', 
+                    'allowPct': str(y.allowance_pct).rstrip('0').rstrip('.') if y.allowance_pct else '', 
+                    'reqLbs': str(y.req_weight_lbs), 
+                    'lots': lots
+                })
+                
+            colors_data.append({'name': c.color_name, 'sizes': sizes, 'yarns': yarns})
+
         data = {
             'system_id': order.system_id, 'job_no': order.job_no, 'buyer_name': order.buyer.buyer_name,
             'style_no': order.style_no, 'po_numbers': order.po_numbers, 'plan_pct': order.plan_pct, 'gauge': order.gauge,
             'kcd_date': order.kcd_date.strftime('%Y-%m-%d') if order.kcd_date else '',
-            'operations': order.operations, 'status': order.status, 
-            'reject_reason': order.reject_reason,
+            'operations': order.operations, 'status': order.status, 'reject_reason': order.reject_reason,
             'changed_fields': order.changed_fields.split(',') if order.changed_fields else [],
-            'colors': [{'name': c.color_name, 'lots': c.lots, 'sizes': [{'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 'sWeight': s.size_wt_gm, 'lbs': str(s.total_lbs), 'bundleQty': str(s.bundle_qty) if s.bundle_qty else ""} for s in c.sizes.all().order_by('sort_order')]} for c in order.colors.all()]
+            'colors': colors_data
         }
         return JsonResponse({'status': 'success', 'data': data})
     except Exception as e:
@@ -181,7 +232,7 @@ def knitting_order_action_ajax(request):
             for notif in notifs:
                 try:
                     job_no = notif.title.split(': ')[1]
-                    KnittingOrder.objects.filter(job_no=job_no).update(status='Approved', changed_fields='') 
+                    KnittingOrder.objects.filter(job_no=job_no).update(status='Approved', changed_fields='')
                     notif.is_read = True
                     notif.save()
                 except: pass
@@ -199,10 +250,9 @@ def knitting_order_action_ajax(request):
             
             elif action == 'reject':
                 order.status = 'Rejected'
-                order.reject_reason = data.get('reason', '') # <-- রিজেকশনের কারণ সেভ করা হচ্ছে
+                order.reject_reason = data.get('reason', '')
                 order.save()
                 
-                # যে ইউজার এন্ট্রি করেছিল, সরাসরি তার কাছে নোটিফিকেশন পাঠানো হচ্ছে
                 if order.created_by:
                     SystemNotification.objects.create(
                         user=order.created_by,
@@ -210,7 +260,7 @@ def knitting_order_action_ajax(request):
                         message=f"Reason: {order.reject_reason}",
                         link=f"/production/knitting/order-entry/?load_sys_id={order.system_id}"
                     )
-                    
+                
                 SystemNotification.objects.filter(user=request.user, link__contains=sys_id).update(is_read=True)
                 return JsonResponse({'status': 'success', 'msg': f'{order.job_no} Rejected Successfully!'})
             
