@@ -21,11 +21,12 @@
     
     .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;}
     
-    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; font-size: 12.5px;}
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; font-size: 11px; text-transform: uppercase;}
     body.dark-mode .form-group label { color: #ecf0f1; }
     .form-group label span { color: #e74c3c; }
     .form-control { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--main-bg); color: var(--main-text); transition: 0.2s; height: 35px; box-sizing: border-box;}
     .form-control:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.2);}
+    .form-control:disabled, .form-control[readonly] { background: rgba(0,0,0,0.04); cursor: not-allowed; font-weight: bold; color: #555; border: 1px dashed var(--border-color);}
     
     .job-group { display: flex; align-items: stretch; height: 35px; width: 100%; box-sizing: border-box;}
     .job-prefix { background: rgba(0,0,0,0.05); border: 1px solid var(--border-color); padding: 0 8px; font-size: 13px; font-weight: bold; color: #7f8c8d; display: flex; align-items: center; flex-shrink: 0;}
@@ -33,15 +34,16 @@
     .job-input:focus { border-color: #007bff; }
 
     .op-tags { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--main-bg); min-height: 35px;}
-    .tag { background: #1abc9c; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;}
+    .tag { background: #8e44ad; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; display: flex; align-items: center; gap: 6px;}
     .tag span { cursor: pointer; font-weight: bold; }
     .tag span:hover { color: #ffeaa7; }
     .quick-op-btn { padding: 3px 8px; font-size: 11px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--main-text); border-radius: 12px; cursor: pointer; transition: 0.2s;}
     .quick-op-btn:hover { background: #007bff; color: white; border-color: #007bff;}
 
+    /* FULL SPLIT LAYOUT */
     .split-layout { display: flex; gap: 20px; align-items: flex-start; }
-    .left-panel { flex: 0 0 300px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
-    .right-panel { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg);}
+    .left-panel { flex: 0 0 280px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .right-panel { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); overflow: hidden;}
     
     .color-item { display: flex; justify-content: space-between; padding: 10px; background: var(--card-bg); border: 1px solid var(--border-color); margin-bottom: 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 500;}
     .color-item.active { border-left: 4px solid #007bff; background: rgba(0,123,255,0.05); }
@@ -53,7 +55,7 @@
     .summary-row.total { font-size: 14px; font-weight: 900; color: #2c3e50; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 10px;}
-    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 12px; color: var(--main-text);}
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 11px; color: var(--main-text);}
     th { background: rgba(0,0,0,0.05); font-weight: 600;}
     .td-input { width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 3px; text-align: center; background: var(--main-bg); color: var(--main-text); transition: 0.2s;}
     .td-input:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.3); outline: none; }
@@ -74,14 +76,22 @@
     .fast-input:focus { border: 1px solid #007bff; background: rgba(0,123,255,0.05);}
 </style>
 
-<div id="order-master">
+<div id="printArea" style="display: none; font-family: monospace;">
+    <h3 style="margin: 0; font-size: 18px;">PANDORA SWEATERS</h3>
+    <svg id="barcode"></svg>
+    <div style="font-size: 14px; margin-top: 5px; font-weight: bold;" id="printDetails"></div>
+</div>
+
+<div class="layout-wrapper">
+    <!-- LEFT PANEL (Hidden but required for structural wrapper match) -->
+    
     <!-- Main Entry Card -->
-    <div class="entry-card">
+    <div class="entry-card" style="width: 100%;">
         <div class="form-header">
             <div class="autocomplete-wrapper" style="flex: 1; max-width: 500px;">
                 <div style="position: relative;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: #007bff;"></i>
-                    <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Advanced Search (Job, Buyer, Style, Color or PO)..." oninput="searchGlobalJob(this.value)" autocomplete="off">
+                    <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Advanced Search (Job, Style, or PO)" oninput="searchGlobalJob(this.value)" autocomplete="off">
                 </div>
                 <div id="globalJobSearchList" class="autocomplete-list"></div>
             </div>
@@ -159,10 +169,12 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- SPLIT LAYOUT 1: Size Matrix -->
+    <!-- MAIN SPLIT LAYOUT FOR EVERYTHING -->
     <div class="entry-card split-layout" id="sizeSplitLayout">
-        <!-- Left Panel: Color List & Summary -->
+        
+        <!-- LEFT PANEL: Summary & Color List -->
         <div class="left-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <strong style="font-size:14px; color:var(--main-text);">COLOR LIST <span style="color:#e74c3c;">*</span></strong>
@@ -171,6 +183,7 @@
             
             <div id="colorContainer"></div>
             
+            <!-- Color Summary -->
             <div class="summary-box" style="border-top: 2px solid #27ae60;">
                 <div class="summary-row"><span>Total Color</span> <strong id="sumColor">0</strong></div>
                 <div class="summary-row"><span>Total Size</span> <strong id="sumSize">0</strong></div>
@@ -180,12 +193,32 @@
                     <span>Total Weight (Lbs)</span> <span id="sumTotalLbs">0</span>
                 </div>
             </div>
+
+            <!-- YARN LIVE SUMMARY -->
+            <div class="summary-box" style="margin-top: 15px; border-top: 2px solid #8e44ad; padding-top: 15px;">
+                <strong style="font-size:13px; color:#8e44ad;"><i class="fa-solid fa-layer-group"></i> YARN LIVE SUMMARY</strong>
+                <div id="yarnLiveSummary" style="margin-top:10px;">
+                    <div style="font-size:12px; color:#7f8c8d; text-align:center;">Select a color to see yarn details.</div>
+                </div>
+            </div>
         </div>
 
+        <!-- RIGHT PANEL: Matrix & Yarn Config -->
         <div class="right-panel">
-            <div class="form-group" style="width: 50%;">
-                <label>SELECTED COLOR NAME</label>
-                <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
+            
+            <!-- REFINED COLOR HEADER SECTION (2 Fields Inline) -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px; align-items:flex-end;">
+                <div class="form-group">
+                    <label>SELECTED COLOR NAME</label>
+                    <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
+                </div>
+                <div class="form-group">
+                    <label>PACK TYPE</label>
+                    <select id="currPackType" class="form-control" onchange="updatePackType()">
+                        <option value="Solid Size">Solid Size</option>
+                        <option value="Assort Size">Assort Size</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Size Matrix -->
@@ -201,40 +234,27 @@
                 <table>
                     <thead>
                         <tr>
-                            <th width="5%">#</th>
-                            <th width="15%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
-                            <th width="12%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
-                            <th width="13%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
-                            <th width="15%">SIZE WT (gm) <span style="color:#e74c3c;">*</span></th>
-                            <th width="12%">TOTAL (Lbs)</th>
-                            <th width="13%">BUNDLE QTY</th>
-                            <th width="15%">ACTION</th>
+                            <th width="3%">#</th>
+                            <th width="12%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
+                            <th width="10%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
+                            <th width="10%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
+                            <th width="12%">BODY WT (gm) <span style="color:#e74c3c;">*</span></th>
+                            <th width="12%">OTHERS WT (gm)</th>
+                            <th width="10%" style="background: rgba(0,0,0,0.02);">TOTAL WT (gm)</th>
+                            <th width="10%">TOTAL (Lbs)</th>
+                            <th width="10%">BUNDLE QTY</th>
+                            <th width="10%">ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="sizeTbody">
-                        <tr><td colspan="8" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>
+                        <tr><td colspan="10" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>
                     </tbody>
                     <tfoot id="sizeTfoot"></tfoot>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- SPLIT LAYOUT 2: Yarn Consumption -->
-    <div class="entry-card split-layout" id="yarnSplitLayout" style="display: none;">
-        <!-- Left Panel: Yarn Live Summary -->
-        <div class="left-panel">
-            <div class="summary-box" style="margin-top: 0; border-top: 2px solid #8e44ad;">
-                <strong style="font-size:13px; color:#8e44ad;"><i class="fa-solid fa-layer-group"></i> YARN LIVE SUMMARY</strong>
-                <div id="yarnLiveSummary" style="margin-top:10px;">
-                    <div style="font-size:12px; color:#7f8c8d; text-align:center;">Select a color to see yarn details.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Panel: Yarn Table -->
-        <div class="right-panel">
-            <div class="form-group">
+            <!-- Yarn Consumption Table -->
+            <div class="form-group" style="margin-top: 30px;" id="yarnSection" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
                     <label style="margin:0;"><i class="fa-solid fa-layer-group" style="color:#8e44ad;"></i> YARN CONSUMPTION & LOT DETAILS <span style="color:#e74c3c;">*</span></label>
                     <button type="button" class="btn-action" style="padding: 5px 15px; font-size:12px; background:#8e44ad;" onclick="addYarn()"><i class="fa-solid fa-plus"></i> Add Yarn</button>
@@ -257,7 +277,19 @@
         <button class="btn-action btn-new" id="btnApprove" style="display:none;" onclick="approveOrderFromPage()"><i class="fa-solid fa-check"></i> Approve Order</button>
         <button class="btn-action btn-clear" onclick="window.location.href=window.location.pathname;"><i class="fa-solid fa-rotate-right"></i> Clear All</button>
     </div>
-</div>
+
+<!-- NEW FULL WIDTH ALLOCATION MATRIX -->
+    <div class="entry-card" id="allocSection" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+            <label style="margin:0; font-size: 15px; color:#2c3e50;"><i class="fa-solid fa-table-cells" style="color:#f39c12;"></i> LOT - SIZE ALLOCATION MATRIX</label>
+            <button type="button" class="btn-action" style="padding: 6px 20px; font-size:13px; background:#f39c12; color:#fff;" onclick="autoCalculateMatrix()"><i class="fa-solid fa-bolt"></i> Generate Matrix</button>
+        </div>
+        <div id="allocContainer" style="overflow-x: auto; padding-bottom: 10px;">
+            <div style="color:#aaa; font-style:italic; font-size:12px; text-align:center; padding: 20px;">
+                Add Sizes, Yarns, and Lots first, then click "Generate Matrix" to allocate lots to specific sizes.
+            </div>
+        </div>
+    </div>
 
 <!-- Modal Logic -->
 <div id="reject-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;">
@@ -352,15 +384,27 @@
                 let idx = qtys.indexOf(e.target); 
                 if (idx > -1 && idx < qtys.length - 1) { qtys[idx + 1].focus(); qtys[idx + 1].select(); }
                 else if (idx === qtys.length - 1) {
-                    let firstWt = document.querySelector('.matrix-wt');
+                    let firstWt = document.querySelector('.matrix-body-wt');
                     if(firstWt) { firstWt.focus(); firstWt.select(); }
                 }
                 return; 
             }
-            // Matrix Weight Jump
-            if (e.target.classList.contains('matrix-wt')) {
+            // Matrix Body Weight Jump
+            if (e.target.classList.contains('matrix-body-wt')) {
                 e.preventDefault(); 
-                let wts = Array.from(document.querySelectorAll('.matrix-wt'));
+                let wts = Array.from(document.querySelectorAll('.matrix-body-wt'));
+                let idx = wts.indexOf(e.target); 
+                if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
+                else if (idx === wts.length - 1) {
+                    let firstOthWt = document.querySelector('.matrix-other-wt');
+                    if(firstOthWt) { firstOthWt.focus(); firstOthWt.select(); }
+                }
+                return; 
+            }
+            // Matrix Other Weight Jump
+            if (e.target.classList.contains('matrix-other-wt')) {
+                e.preventDefault(); 
+                let wts = Array.from(document.querySelectorAll('.matrix-other-wt'));
                 let idx = wts.indexOf(e.target); 
                 if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
                 else if (idx === wts.length - 1) {
@@ -379,7 +423,6 @@
             }
 
             // --- YARN VERTICAL NAVIGATION LOGIC ---
-            // 1. Yarn Name Jump
             if (e.target.classList.contains('yarn-name-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-name-input'));
@@ -391,7 +434,6 @@
                 }
                 return;
             }
-            // 2. Yarn Cons Jump
             if (e.target.classList.contains('yarn-cons-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-cons-input'));
@@ -403,17 +445,15 @@
                 }
                 return;
             }
-            // 3. Yarn Allow Jump
             if (e.target.classList.contains('yarn-allow-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-allow-input'));
                 let idx = inputs.indexOf(e.target);
                 if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
                 else if (idx === inputs.length - 1) {
-                    // Jump to first Yarn's Lot input
                     let c = orderData.colors.find(x => x.id === actColId);
                     if(c && c.yarns.length > 0) {
-                        c.yarns[0].showLotInput = true; // force show first lot input
+                        c.yarns[0].showLotInput = true; 
                         renderYarns(c); calcAll();
                         setTimeout(() => {
                             let nextCol = document.getElementById(`add_lot_name_${c.yarns[0].id}`);
@@ -423,7 +463,6 @@
                 }
                 return;
             }
-            // 4. Lot Name to Lot Lbs (Horizontal within same row)
             if (e.target.classList.contains('lot-name-input')) {
                 e.preventDefault();
                 let yId = e.target.id.replace('add_lot_name_', '');
@@ -431,11 +470,10 @@
                 if(nextCol) { nextCol.focus(); nextCol.select(); }
                 return;
             }
-            // 5. Lot Lbs Enter -> Add lot, then jump to NEXT yarn's lot name
             if (e.target.classList.contains('lot-lbs-input')) {
                 e.preventDefault();
                 let yId = e.target.id.replace('add_lot_lbs_', '');
-                addLotFromRow(yId, true); // true = jump to next yarn
+                addLotFromRow(yId, true); 
                 return;
             }
 
@@ -447,6 +485,16 @@
                 let idx = navs.indexOf(e.target);
                 if (idx > -1 && idx < navs.length - 1) { navs[idx + 1].focus(); navs[idx + 1].select(); }
                 else if (idx === navs.length - 1) { document.getElementById('fastColorInput').focus(); }
+            }
+            
+            // Alloc Table Vertical Jump
+            if(e.target.classList.contains('alloc-input')) {
+                e.preventDefault();
+                let szId = e.target.getAttribute('data-sz');
+                let inputs = Array.from(document.querySelectorAll(`.alloc-input[data-sz="${szId}"]`));
+                let idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                return;
             }
         }
         
@@ -463,8 +511,16 @@
             if (data.length > 0) {
                 data.forEach(job => {
                     let div = document.createElement('div'); div.className = 'autocomplete-item'; 
-                    div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} (${job.style}) <br><span style="font-size:11px; color:#888;">SYS ID: ${job.sys_id}</span> <span style="font-weight:bold; color:#e74c3c; float:right;">[${job.status}]</span>`;
-                    div.onmousedown = function() { document.getElementById('globalJobSearch').value = job.job_no; list.style.display = 'none'; loadOrderDetails(job.sys_id); };
+                    // এই লাইনটি দিয়ে রিপ্লেস করুন
+div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> ------- <b>PO:</b> ${job.pos} -- <b>Color:</b> ${job.colors} <br>
+<span style="font-size:11px; color:#2c3e50;">
+<span style="font-size:11px; color:#888;">SYS ID: ${job.sys_id}</span> 
+<span style="font-weight:bold; color:${job.status === 'Approved' ? '#27ae60' : '#e74c3c'}; float:right;">[${job.status}]</span>`;
+                    div.onmousedown = function() { 
+                        document.getElementById('globalJobSearch').value = ""; // Auto-clear search
+                        list.style.display = 'none'; 
+                        loadOrderDetails(job.sys_id); 
+                    };
                     list.appendChild(div);
                 });
                 list.style.display = 'block'; 
@@ -530,7 +586,11 @@
         n = n.trim(); 
         if(n) { 
             if(orderData.colors.some(c => c.name.toLowerCase() === n.toLowerCase())) { showModal(`Color '${n}' already exists!`); return; }
-            let c = { id: generateId(), name: n, sizes: [], yarns: [{id: generateId(), name: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true}], totalLbs: 0 }; 
+            let c = { 
+                id: generateId(), name: n, packType: 'Solid Size', 
+                sizes: [], yarns: [{id: generateId(), name: '', type: 'Main', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true}], 
+                allocations: {}, totalLbs: 0 
+            }; 
             orderData.colors.push(c); actColId = c.id; renderColors(); openRight(); 
         } 
     }
@@ -554,17 +614,22 @@
     function openRight() { 
         if(!actColId) { 
             document.getElementById('currColorName').value = '';
-            document.getElementById('sizeTbody').innerHTML = `<tr><td colspan="8" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>`;
+            document.getElementById('currPackType').value = 'Solid Size';
+            document.getElementById('sizeTbody').innerHTML = `<tr><td colspan="10" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>`;
             document.getElementById('sizeTfoot').innerHTML = '';
-            document.getElementById('yarnSplitLayout').style.display = 'none';
+            document.getElementById('yarnSection').style.display = 'none';
+            document.getElementById('allocSection').style.display = 'none';
             return; 
         } 
         let c = orderData.colors.find(x => x.id === actColId); 
         document.getElementById('currColorName').value = c.name; 
-        document.getElementById('sizeFormatSelect').value = ""; 
-        document.getElementById('yarnSplitLayout').style.display = 'flex';
+        document.getElementById('currPackType').value = c.packType || 'Solid Size';
+        
+        document.getElementById('yarnSection').style.display = 'block';
+        document.getElementById('allocSection').style.display = 'block';
         renderSizes(c); 
         renderYarns(c);
+        renderAllocationTable();
     }
 
     function updateColName() { 
@@ -573,13 +638,18 @@
             orderData.colors.find(c => c.id === actColId).name = newName; renderColors(); 
         } else if(newName) { showModal("This color name already exists!"); document.getElementById('currColorName').value = orderData.colors.find(c => c.id === actColId).name; }
     }
+
+    function updatePackType() {
+        let c = orderData.colors.find(x => x.id === actColId);
+        c.packType = document.getElementById('currPackType').value;
+    }
     
     function loadSizes() { 
         let f = document.getElementById('sizeFormatSelect').value; 
         if(!f || !actColId) return; 
         let c = orderData.colors.find(x => x.id === actColId); 
         let sizesArr = f === 'empty' ? [''] : sizeTemplates[f];
-        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, sWeight: "", lbs: 0, bundleQty: "", sort: 1 })); 
+        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, bodyWt: "", otherWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1 })); 
         renderSizes(c); calcAll(); 
         setTimeout(() => { let firstQty = document.querySelector('.matrix-qty'); if(firstQty) firstQty.focus(); }, 100);
     }
@@ -589,11 +659,11 @@
             let safeCName = c.name.replace(/\s+/g, '_');
             let safeSName = s.name.replace(/\s+/g, '_');
             let qId = `qty_${safeCName}_${safeSName}`;
-            let wId = `wt_${safeCName}_${safeSName}`;
+            let bwId = `bwt_${safeCName}_${safeSName}`;
             let bId = `bndl_${safeCName}_${safeSName}`;
             
             let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : '';
-            let wHi = (window.isApprovalMode && window.changedFields.includes(wId)) ? 'highlight-change' : '';
+            let wHi = (window.isApprovalMode && window.changedFields.includes(bwId)) ? 'highlight-change' : ''; 
             let bHi = (window.isApprovalMode && window.changedFields.includes(bId)) ? 'highlight-change' : '';
             
             return `
@@ -602,7 +672,11 @@
                 <td><input type="text" class="td-input" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
                 <td><input type="text" id="${qId}" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
                 <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
-                <td><input type="text" id="${wId}" class="td-input matrix-wt ${wHi}" value="${s.sWeight}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateWt('${s.id}', this.value)"></td>
+                
+                <td><input type="text" id="${bwId}" class="td-input matrix-body-wt ${wHi}" value="${s.bodyWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBWt('${s.id}', this.value)"></td>
+                <td><input type="text" class="td-input matrix-other-wt" value="${s.otherWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOWt('${s.id}', this.value)"></td>
+                <td id="totWt_${s.id}" style="font-weight:bold; background:rgba(0,0,0,0.02);">${s.totalWt}</td>
+                
                 <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
                 <td><input type="text" id="${bId}" class="td-input matrix-bundle ${bHi}" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
                 <td>
@@ -613,34 +687,45 @@
         }).join(''); 
     }
     
-    function updateSzName(id, val) { orderData.colors.find(x => x.id === actColId).sizes.find(x => x.id === id).name = val; }
-    function delSz(id) { let c = orderData.colors.find(x => x.id === actColId); c.sizes = c.sizes.filter(s => s.id !== id); renderSizes(c); calcAll(); }
-    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, sWeight: "", lbs: 0, bundleQty: "", sort: 1}); renderSizes(c); calcAll(); }
-    function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); }
-    function updateWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.sWeight = parseInt(val) || 0; calcAll(); }
+    function updateSzName(id, val) { orderData.colors.find(x => x.id === actColId).sizes.find(x => x.id === id).name = val; renderAllocationTable(); }
+    function delSz(id) { let c = orderData.colors.find(x => x.id === actColId); c.sizes = c.sizes.filter(s => s.id !== id); renderSizes(c); calcAll(); renderAllocationTable(); }
+    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, bodyWt: "", otherWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1}); renderSizes(c); calcAll(); renderAllocationTable(); }
+    function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); renderAllocationTable(); }
+    function updateBWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bodyWt = parseInt(val) || 0; calcAll(); }
+    function updateOWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.otherWt = parseInt(val) || 0; calcAll(); }
     function updateBundle(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bundleQty = val ? parseInt(val) : ""; }
 
     // --- Modern Yarn & Lot Management ---
     function addYarn() {
         let c = orderData.colors.find(x => x.id === actColId);
-        c.yarns.push({id: generateId(), name: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true});
-        renderYarns(c); calcAll();
+        c.yarns.push({id: generateId(), name: '', type: 'Main', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true});
+        renderYarns(c); calcAll(); renderAllocationTable();
     }
     function delYarn(yId) {
         let c = orderData.colors.find(x => x.id === actColId);
         c.yarns = c.yarns.filter(y => y.id !== yId);
-        renderYarns(c); calcAll();
+        // Cascade delete parent assignments
+        c.yarns.forEach(y => { if(String(y.parentId) === String(yId)) { y.type = 'Main'; y.parentId = ''; } });
+        renderYarns(c); calcAll(); renderAllocationTable();
     }
     function updateYarn(yId, field, val) {
         let c = orderData.colors.find(x => x.id === actColId);
         let y = c.yarns.find(x => x.id === yId);
-        if (field === 'consPct' || field === 'allowPct') {
-            y[field] = val; 
-            calcAll(); 
+        y[field] = val; 
+        calcAll(); 
+        if(field === 'name' || field === 'type' || field === 'parentId') renderAllocationTable();
+    }
+
+    function updateYarnRelation(yId, val) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        let y = c.yarns.find(x => x.id === yId);
+        if (val === 'Main') {
+            y.type = 'Main'; y.parentId = '';
         } else {
-            y[field] = val;
-            calcAll(); 
+            y.type = 'Support'; y.parentId = val;
         }
+        calcAll(); renderAllocationTable();
+        renderYarns(c); 
     }
     
     // Show Lot Input manually if user clicks [+]
@@ -665,23 +750,23 @@
             let y = c.yarns[yIdx];
             
             y.lots.push({id: generateId(), lotName: lName, lbs: lLbs});
-            y.showLotInput = false; // Hide current
+            y.showLotInput = false; 
             
             let nextFocusId = null;
             if (jumpToNextYarn) {
                 if (yIdx < c.yarns.length - 1) {
                     let nextY = c.yarns[yIdx + 1];
-                    nextY.showLotInput = true; // Show next
+                    nextY.showLotInput = true; 
                     nextFocusId = `add_lot_name_${nextY.id}`;
                 } else {
-                    nextFocusId = null; // Don't go to save. Just stay or blur.
+                    nextFocusId = null; 
                 }
             } else {
-                y.showLotInput = true; // Keep it open for same yarn
+                y.showLotInput = true; 
                 nextFocusId = `add_lot_name_${y.id}`;
             }
             
-            renderYarns(c); calcAll();
+            renderYarns(c); calcAll(); renderAllocationTable();
             
             if (nextFocusId) {
                 setTimeout(() => {
@@ -700,7 +785,7 @@
         let c = orderData.colors.find(x => x.id === actColId);
         let y = c.yarns.find(x => x.id === yId);
         y.lots = y.lots.filter(l => l.id !== lId);
-        renderYarns(c); calcAll();
+        renderYarns(c); calcAll(); renderAllocationTable();
     }
 
     function renderYarns(c) {
@@ -708,18 +793,21 @@
             <thead>
                 <tr>
                     <th width="20%">YARN NAME <span style="color:#e74c3c;">*</span></th>
-                    <th width="10%">CONS. (%) <span style="color:#e74c3c;">*</span></th>
-                    <th width="10%">ALLOW. (%) <span style="color:#e74c3c;">*</span></th>
-                    <th width="12%">REQ. YARN (Lbs)</th>
-                    <th width="43%" style="text-align:left; padding-left:15px;">LOTS & ALLOCATED LBS <span style="color:#e74c3c;">*</span></th>
-                    <th width="5%">DEL</th>
+                    <th width="15%">RELATION <span style="color:#e74c3c;">*</span></th>
+                    <th width="8%">CONS. <span style="color:#e74c3c;">*</span></th>
+                    <th width="8%">ALLOW. <span style="color:#e74c3c;">*</span></th>
+                    <th width="10%">REQ. (Lbs)</th>
+                    <th width="35%" style="text-align:left; padding-left:15px;">LOTS & ALLOC. LBS <span style="color:#e74c3c;">*</span></th>
+                    <th width="4%">DEL</th>
                 </tr>
             </thead>
             <tbody>`;
 
         if(c.yarns.length === 0) {
-            html += `<tr><td colspan="6" style="color:#aaa; font-style:italic;">No yarns added yet.</td></tr>`;
+            html += `<tr><td colspan="7" style="color:#aaa; font-style:italic;">No yarns added yet.</td></tr>`;
         }
+
+        let mainYarns = c.yarns.filter(y => y.type === 'Main');
 
         c.yarns.forEach((y, yIdx) => {
             let safeCName = c.name.replace(/\s+/g, '_');
@@ -740,28 +828,37 @@
                         </span>`;
             }).join('');
 
+            // Build Dropdown for Relation
+            let relOptions = `<option value="Main" ${y.type==='Main'?'selected':''}>Main Yarn</option>`;
+            mainYarns.forEach(my => {
+                if(String(my.id) !== String(y.id) && my.name) {
+                    relOptions += `<option value="${my.id}" ${String(y.parentId)===String(my.id)?'selected':''}>Support to: ${my.name.substring(0,10)}</option>`;
+                }
+            });
+
             html += `
-            <tr style="background: rgba(0,0,0,0.02);">
+            <tr style="background: ${y.type==='Support'?'rgba(0,0,0,0.04)':'rgba(0,0,0,0.01)'}; border-left: ${y.type==='Support'?'3px solid #8e44ad':''};">
                 <td><input type="text" class="td-input yarn-name-input ${nameHi}" value="${y.name}" placeholder="e.g. 2/32 Acrylic" oninput="updateYarn('${y.id}', 'name', this.value)"></td>
+                <td>
+                    <select class="td-input" style="padding:4px; font-size:11px; font-weight:normal;" onchange="updateYarnRelation('${y.id}', this.value)">
+                        ${relOptions}
+                    </select>
+                </td>
                 <td><input type="text" class="td-input yarn-cons-input ${consHi}" value="${y.consPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'consPct', this.value)"></td>
                 <td><input type="text" class="td-input yarn-allow-input ${allowHi}" value="${y.allowPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'allowPct', this.value)"></td>
                 <td id="reqLbs_${y.id}" class="${reqHi}" style="font-weight:bold; color:#e74c3c; font-size:14px;">${y.reqLbs}</td>
                 
                 <td style="text-align:left; padding: 10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                            ${lotsHtml}
-                            ${y.showLotInput ? `
-                                <div style="display:flex; gap:5px; align-items:center;">
-                                    <input type="text" id="add_lot_name_${y.id}" class="td-input lot-name-input" placeholder="+ Lot Name" style="font-size:11px; width:100px;">
-                                    <input type="text" id="add_lot_lbs_${y.id}" class="td-input lot-lbs-input" placeholder="Lbs" style="font-size:11px; width:70px;" oninput="this.value=this.value.replace(/[^0-9.]/g,'');">
-                                    <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#27ae60;" onclick="addLotFromRow('${y.id}', false)" title="Add & Stay"><i class="fa-solid fa-plus"></i></button>
-                                </div>
-                            ` : ``}
-                        </div>
-                        ${!y.showLotInput ? `
-                            <button class="btn-action" style="padding:3px 10px; font-size:11px; background:#8e44ad; margin-left:auto;" onclick="showLotInput('${y.id}')"><i class="fa-solid fa-plus"></i> Add Lot</button>
-                        ` : ``}
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
+                        ${lotsHtml}
+                        
+                        ${y.showLotInput ? `
+                            <input type="text" id="add_lot_name_${y.id}" class="td-input lot-name-input" placeholder="+ Lot Name" style="font-size:11px; width:100px;">
+                            <input type="text" id="add_lot_lbs_${y.id}" class="td-input lot-lbs-input" placeholder="Lbs" style="font-size:11px; width:70px;" oninput="this.value=this.value.replace(/[^0-9.]/g,'');">
+                            <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#27ae60;" onclick="addLotFromRow('${y.id}', false)" title="Add & Stay"><i class="fa-solid fa-plus"></i></button>
+                        ` : `
+                            <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#8e44ad;" onclick="showLotInput('${y.id}')"><i class="fa-solid fa-plus"></i> Add Lot</button>
+                        `}
                     </div>
                 </td>
                 
@@ -775,11 +872,11 @@
             </tbody>
             <tfoot id="yarnTfoot">
                 <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid var(--border-color);">
-                    <td style="text-align:right;">YARN TOTAL:</td>
+                    <td colspan="2" style="text-align:right;">YARN TOTAL:</td>
                     <td id="yarnTotalCons" style="font-size:14px;">0%</td>
                     <td></td>
                     <td id="yarnTotalReq" style="color:#e74c3c; font-size:14px;">0</td>
-                    <td id="yarnTotalAlloc" style="font-size:14px; text-align:left; padding-left:15px;">0 Lbs (Total Allocated)</td>
+                    <td id="yarnTotalAlloc" style="font-size:14px; text-align:left; padding-left:15px;">0 Lbs</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -787,6 +884,345 @@
         document.getElementById('yarnContainer').innerHTML = html;
     }
 
+    // --- 2. UPDATED AUTO CALCULATE MATRIX (Bottleneck logic based on Allocated Lbs) ---
+    function autoCalculateMatrix() {
+        if(!actColId) return;
+        let c = orderData.colors.find(x => x.id === actColId);
+        
+        let mains = c.yarns.filter(y => y.type === 'Main' && y.lots.length > 0);
+        let supports = c.yarns.filter(y => y.type === 'Support' && y.lots.length > 0);
+        
+        if(mains.length === 0 || c.sizes.length === 0) {
+            document.getElementById('allocContainer').innerHTML = `<div style="color:#e74c3c; font-style:italic; font-size:12px; text-align:center; padding: 20px;">Cannot generate matrix. Ensure you have sizes and at least one Main Yarn with Lots.</div>`;
+            return;
+        }
+
+        // BOTTLENECK CALCULATION: Total possible percentage based on allocated vs required
+        let minPct = 1.0;
+        let hasZeroAlloc = false;
+        c.yarns.forEach(y => {
+            let reqLbs = parseFloat(y.reqLbs) || 0;
+            if(reqLbs > 0) {
+                let totalAlloc = y.lots.reduce((sum, l) => sum + (parseFloat(l.lbs)||0), 0);
+                if(totalAlloc <= 0) hasZeroAlloc = true;
+                let pct = totalAlloc / reqLbs;
+                if(pct < minPct) minPct = pct;
+            }
+        });
+        
+        // If any yarn has 0 allocated, 0 pieces can be made
+        if(hasZeroAlloc) minPct = 0;
+        // Cap at 100% plan qty
+        if(minPct > 1.0) minPct = 1.0;
+
+        c.allocations = {};
+        let sizePairs = {}; 
+        c.sizes.forEach(sz => sizePairs[sz.id] = []);
+
+        if (c.packType === 'Solid Size') {
+            // SOLID SIZE LOGIC based on ALLOCATED LBS
+            let totalColorPcs = c.sizes.reduce((sum, sz) => sum + Math.floor(sz.pQty * minPct), 0);
+            
+            mains.forEach(my => {
+                let myTotalLbs = my.lots.reduce((sum, l) => sum + (parseFloat(l.lbs)||0), 0);
+                
+                let mLotsCapacity = my.lots.map((ml, idx) => {
+                    let pcs = idx === my.lots.length - 1 ? 0 : Math.round(totalColorPcs * ((parseFloat(ml.lbs)||0) / myTotalLbs)) || 0;
+                    return { lot: ml, pcs: pcs };
+                });
+                let mSum = mLotsCapacity.reduce((acc, curr) => acc + curr.pcs, 0);
+                if(mLotsCapacity.length > 0) mLotsCapacity[mLotsCapacity.length - 1].pcs = totalColorPcs - mSum;
+
+                let linkedSupports = supports.filter(sy => String(sy.parentId) === String(my.id));
+                let sLotsPcsList = [];
+                
+                if (linkedSupports.length > 0) {
+                    linkedSupports.forEach(sy => {
+                        let syTotalLbs = sy.lots.reduce((sum, l) => sum + (parseFloat(l.lbs)||0), 0);
+                        let sLotsCapacity = sy.lots.map((sl, idx) => {
+                            let pcs = idx === sy.lots.length - 1 ? 0 : Math.round(totalColorPcs * ((parseFloat(sl.lbs)||0) / syTotalLbs)) || 0;
+                            return { lot: sl, yName: sy.name, pcs: pcs };
+                        });
+                        let sSum = sLotsCapacity.reduce((acc, curr) => acc + curr.pcs, 0);
+                        if(sLotsCapacity.length > 0) sLotsCapacity[sLotsCapacity.length - 1].pcs = totalColorPcs - sSum;
+                        
+                        sLotsPcsList.push(sLotsCapacity);
+                    });
+                } else {
+                    sLotsPcsList.push([{ lot: {id: 'none', lotName: 'No support yarn'}, yName: '', pcs: totalColorPcs }]);
+                }
+
+                let sLotsCapacity = sLotsPcsList[0]; 
+                let mIdx = 0, sIdx = 0;
+                
+                c.sizes.forEach(sz => {
+                    let achievable_qty = Math.floor(sz.pQty * minPct);
+                    let remainingPcsForSize = achievable_qty;
+                    
+                    while (remainingPcsForSize > 0 && mIdx < mLotsCapacity.length && sIdx < sLotsCapacity.length) {
+                        let mItem = mLotsCapacity[mIdx];
+                        let sItem = sLotsCapacity[sIdx];
+                        let take = Math.min(remainingPcsForSize, mItem.pcs, sItem.pcs);
+                        
+                        if (take > 0) {
+                            sizePairs[sz.id].push({ mainYarn: my, mLot: mItem.lot, sLot: sItem.lot, sYarnName: sItem.yName, pcs: take });
+                        }
+                        
+                        remainingPcsForSize -= take;
+                        mItem.pcs -= take;
+                        sItem.pcs -= take;
+                        
+                        if (mItem.pcs <= 0) mIdx++;
+                        if (sItem.pcs <= 0) sIdx++;
+                    }
+                });
+            });
+
+        } else {
+            // ASSORT SIZE LOGIC based on ALLOCATED LBS
+            c.sizes.forEach(sz => {
+                let achievable_qty = Math.floor(sz.pQty * minPct);
+                let q = achievable_qty; // Process with the constrained quantity
+                
+                mains.forEach(my => {
+                    let myTotalLbs = my.lots.reduce((sum, l) => sum + (parseFloat(l.lbs)||0), 0);
+                    let mLotsPcs = my.lots.map((ml, idx) => {
+                        let pcs = idx === my.lots.length - 1 ? 0 : Math.round(q * ((parseFloat(ml.lbs)||0) / myTotalLbs)) || 0;
+                        return { lot: ml, pcs: pcs };
+                    });
+                    let mSum = mLotsPcs.reduce((acc, curr) => acc + curr.pcs, 0);
+                    if(mLotsPcs.length > 0) mLotsPcs[mLotsPcs.length - 1].pcs = q - mSum;
+
+                    let linkedSupports = supports.filter(sy => String(sy.parentId) === String(my.id));
+                    let sLotsPcsList = [];
+                    
+                    if (linkedSupports.length > 0) {
+                        linkedSupports.forEach(sy => {
+                            let syTotalLbs = sy.lots.reduce((sum, l) => sum + (parseFloat(l.lbs)||0), 0);
+                            let sLotsPcs = sy.lots.map((sl, idx) => {
+                                let pcs = idx === sy.lots.length - 1 ? 0 : Math.round(q * ((parseFloat(sl.lbs)||0) / syTotalLbs)) || 0;
+                                return { lot: sl, yName: sy.name, pcs: pcs };
+                            });
+                            let sSum = sLotsPcs.reduce((acc, curr) => acc + curr.pcs, 0);
+                            if(sLotsPcs.length > 0) sLotsPcs[sLotsPcs.length - 1].pcs = q - sSum;
+                            
+                            sLotsPcsList.push(sLotsPcs);
+                        });
+                    } else {
+                        sLotsPcsList.push([{ lot: {id: 'none', lotName: 'No support yarn'}, yName: '', pcs: q }]);
+                    }
+
+                    let sLotsPcs = sLotsPcsList[0];
+
+                    let mIdx = 0, sIdx = 0;
+                    while(mIdx < mLotsPcs.length && sIdx < sLotsPcs.length) {
+                        let mItem = mLotsPcs[mIdx];
+                        let sItem = sLotsPcs[sIdx];
+                        let take = Math.min(mItem.pcs, sItem.pcs);
+                        
+                        if (take > 0) {
+                            sizePairs[sz.id].push({ mainYarn: my, mLot: mItem.lot, sLot: sItem.lot, sYarnName: sItem.yName, pcs: take });
+                        }
+                        mItem.pcs -= take;
+                        sItem.pcs -= take;
+                        
+                        if (mItem.pcs <= 0) mIdx++;
+                        if (sItem.pcs <= 0) sIdx++;
+                    }
+                });
+            });
+        }
+
+        // Map pairs into allocations dictionary
+        mains.forEach(my => {
+            my.lots.forEach(mlot => {
+                let uSLotsMap = new Map();
+                c.sizes.forEach(sz => {
+                    let pairs = sizePairs[sz.id] || [];
+                    pairs.forEach(p => {
+                        if (String(p.mainYarn.id) === String(my.id) && String(p.mLot.id) === String(mlot.id)) {
+                            let key = p.sYarnName + "_" + p.sLot.id;
+                            if(!uSLotsMap.has(key)) uSLotsMap.set(key, { yName: p.sYarnName, lot: p.sLot });
+                        }
+                    });
+                });
+
+                let sLotsArray = Array.from(uSLotsMap.values());
+                if (sLotsArray.length === 0) sLotsArray = [{yName: '', lot: {id:'none', lotName: 'No support yarn'}}];
+
+                sLotsArray.forEach(supportData => {
+                    let rId = `alloc_${mlot.id}_${supportData.lot.id}`;
+                    if(!c.allocations[rId]) c.allocations[rId] = {};
+                    
+                    c.sizes.forEach(sz => {
+                        let pairs = sizePairs[sz.id] || [];
+                        let matchedPair = pairs.find(p => String(p.mainYarn.id) === String(my.id) && String(p.mLot.id) === String(mlot.id) && String(p.sLot.id) === String(supportData.lot.id));
+                        c.allocations[rId][sz.id] = matchedPair ? matchedPair.pcs : 0;
+                    });
+                });
+            });
+        });
+
+        renderAllocationTable();
+    }
+
+
+    // --- 3. UPDATED RENDER ALLOCATION TABLE (Added Balance Pcs Row) ---
+    function renderAllocationTable() {
+        if(!actColId) return;
+        let c = orderData.colors.find(x => x.id === actColId);
+        let mains = c.yarns.filter(y => y.type === 'Main' && y.lots.length > 0);
+        let supports = c.yarns.filter(y => y.type === 'Support' && y.lots.length > 0);
+        
+        if(mains.length === 0 || c.sizes.length === 0) {
+            document.getElementById('allocContainer').innerHTML = `<div style="color:#e74c3c; font-style:italic; font-size:12px; text-align:center; padding: 20px;">Cannot generate matrix. Ensure you have sizes and at least one Main Yarn with Lots.</div>`;
+            return;
+        }
+
+        let html = `<table style="width:100%; border-collapse: collapse; text-align:center;">
+            <thead>
+                <tr style="background: rgba(243,156,18,0.1); border-bottom: 2px solid #f39c12;">
+                    <th style="padding: 10px; width:2.5%;">Color</th>
+                    <th style="padding: 10px; width:9%;">Main Yarn Name</th>
+                    <th style="padding: 10px; width:6%;">MAIN YARN LOT</th>
+                    <th style="padding: 10px; width:13%;">SUPPORT YARN Name LOT</th>`;
+        
+        c.sizes.forEach(s => {
+            html += `<th style="padding: 10px;"><span style="color:#007bff; font-weight:bold; font-size:14px;">${s.name}</span></th>`;
+        });
+        
+        html += `<th style="padding: 10px; width:5%; background:rgba(0,0,0,0.05);">Total</th></tr></thead><tbody>`;
+
+        if(!c.allocations) c.allocations = {};
+        
+        let tableRows = [];
+        mains.forEach(my => {
+            my.lots.forEach(mlot => {
+                let uSLotsMap = new Map();
+                c.sizes.forEach(sz => {
+                    Object.keys(c.allocations).forEach(rId => {
+                        let parts = rId.split('_');
+                        if (parts[0] === 'alloc' && parts[1] === String(mlot.id) && c.allocations[rId][sz.id] > 0) {
+                            let sLotId = parts[2];
+                            let syName = ''; let sLotObj = {id: sLotId, lotName: 'No support yarn'};
+                            supports.forEach(sy => {
+                                let matchLot = sy.lots.find(sl => String(sl.id) === String(sLotId));
+                                if (matchLot) { syName = sy.name; sLotObj = matchLot; }
+                            });
+                            uSLotsMap.set(sLotId, { yName: syName, lot: sLotObj });
+                        }
+                    });
+                });
+
+                let sLotsArray = Array.from(uSLotsMap.values());
+                if (sLotsArray.length === 0) sLotsArray = [{yName: '', lot: {id:'none', lotName: 'No support yarn'}}];
+
+                sLotsArray.forEach(supportData => {
+                    let rowData = { my: my, mLot: mlot, syName: supportData.yName, sLot: supportData.lot, sizes: {} };
+                    let rId = `alloc_${mlot.id}_${supportData.lot.id}`;
+                    c.sizes.forEach(sz => { rowData.sizes[sz.id] = (c.allocations[rId] && c.allocations[rId][sz.id]) ? c.allocations[rId][sz.id] : 0; });
+                    tableRows.push(rowData);
+                });
+            });
+        });
+
+        let colorRowspan = tableRows.length;
+        let yarnRowspans = {};
+        let lotRowspans = {};
+        tableRows.forEach(row => {
+            yarnRowspans[row.my.id] = (yarnRowspans[row.my.id] || 0) + 1;
+            lotRowspans[row.mLot.id] = (lotRowspans[row.mLot.id] || 0) + 1;
+        });
+
+        let renderedYarns = {};
+        let renderedLots = {};
+        let isFirstColor = true;
+        
+        let colTots = {};
+        c.sizes.forEach(s => colTots[s.id] = 0);
+        let grandAllocTot = 0;
+
+        tableRows.forEach(row => {
+            html += `<tr style="border-bottom: 1px solid #eee;">`;
+            
+            if (isFirstColor) {
+                html += `<td rowspan="${colorRowspan}" style="font-weight:bold; color:#000; vertical-align:middle; text-align:center; transform: rotate(-90deg); white-space:nowrap;">${c.name}</td>`;
+                isFirstColor = false;
+            }
+            if (!renderedYarns[row.my.id]) {
+                html += `<td rowspan="${yarnRowspans[row.my.id]}" style="vertical-align:middle; font-weight:bold; color:#333;">${row.my.name}</td>`;
+                renderedYarns[row.my.id] = true;
+            }
+            if (!renderedLots[row.mLot.id]) {
+                html += `<td rowspan="${lotRowspans[row.mLot.id]}" style="vertical-align:middle; font-weight:bold; color:#f39c12;">
+                            <span class="badge" style="background:#f39c12; font-size:12px; padding:4px 8px;">${row.mLot.lotName}</span>
+                         </td>`;
+                renderedLots[row.mLot.id] = true;
+            }
+            
+            let sLabel = row.syName ? `<b>${row.syName}</b> : <span class="badge" style="background:#8e44ad; font-size:10px;">${row.sLot.lotName}</span>` : `<span style="color:#aaa; font-style:italic;">No support yarn</span>`;
+            html += `<td style="text-align:center; vertical-align:middle;">${sLabel}</td>`;
+            
+            let rowTot = 0;
+            c.sizes.forEach(sz => {
+                let pcs = row.sizes[sz.id];
+                rowTot += pcs;
+                colTots[sz.id] += pcs;
+                html += `<td style="font-weight:bold; color:${pcs>0?'#27ae60':'#ccc'}; background:rgba(39,174,96,0.02); border:1px solid #eee;">${pcs}</td>`;
+            });
+            grandAllocTot += rowTot;
+            html += `<td style="font-weight:bold; background:rgba(0,0,0,0.02);">${rowTot}</td></tr>`;
+        });
+
+        let numMainYarns = mains.length > 0 ? mains.length : 1;
+
+        // Row 1: ALLOCATED TOTAL
+        html += `</tbody><tfoot>
+            <tr style="background: rgba(0,0,0,0.02); font-weight: bold; border-top: 2px solid #ccc;">
+                <td colspan="4" style="text-align:right; padding:10px;">ALLOCATED TOTAL (Pcs):</td>`;
+        
+        let dividedGrandTot = 0;
+        let allocPcsMap = {};
+        c.sizes.forEach(s => {
+            let divTot = Math.round(colTots[s.id] / numMainYarns);
+            allocPcsMap[s.id] = divTot;
+            dividedGrandTot += divTot;
+            let color = divTot >= s.pQty ? '#27ae60' : '#e74c3c'; 
+            html += `<td style="color:${color}; font-size:14px; text-align:center; padding:10px;">${divTot}</td>`;
+        });
+        html += `<td style="color:#2c3e50; font-size:14px; text-align:center;">${dividedGrandTot}</td></tr>`;
+
+        // Row 2: Plan QTY
+        html += `<tr style="background: rgba(0,0,0,0.04); font-weight: bold;">
+                <td colspan="4" style="text-align:right; padding:10px;">Plan QTY (Pcs):</td>`;
+        let planGrandTot = 0;
+        c.sizes.forEach(s => {
+            html += `<td style="color:#333; font-size:14px; text-align:center; padding:10px;">${s.pQty}</td>`;
+            planGrandTot += s.pQty;
+        });
+        html += `<td style="color:#333; font-size:14px; text-align:center;">${planGrandTot}</td></tr>`;
+
+        // Row 3: Balance Qty
+        html += `<tr style="background: rgba(0,0,0,0.06); font-weight: bold;">
+                <td colspan="4" style="text-align:right; padding:10px;">Balance (Pcs):</td>`;
+        let balGrandTot = 0;
+        c.sizes.forEach(s => {
+            let balPcs = allocPcsMap[s.id] - s.pQty;
+            balGrandTot += balPcs;
+            let color = balPcs < 0 ? '#e74c3c' : (balPcs > 0 ? '#27ae60' : '#000');
+            let text = balPcs > 0 ? `+${balPcs}` : balPcs;
+            html += `<td style="color:${color}; font-size:14px; text-align:center; padding:10px;">${text}</td>`;
+        });
+        
+        let gBalColor = balGrandTot < 0 ? '#e74c3c' : (balGrandTot > 0 ? '#27ae60' : '#000');
+        let gBalText = balGrandTot > 0 ? `+${balGrandTot}` : balGrandTot;
+        html += `<td style="color:${gBalColor}; font-size:14px; text-align:center;">${gBalText}</td></tr>`;
+
+        html += `</tfoot></table>`;
+        document.getElementById('allocContainer').innerHTML = html;
+    }
+
+    // --- 1. UPDATED CALC ALL (Added Balance in Yarn Live Summary) ---
     function calcAll() { 
         let pct = parseFloat(document.getElementById('m_planPct').value) || 0; 
         document.getElementById('displayPct').innerText = pct;
@@ -799,13 +1235,17 @@
             let cTotalLbs = 0; 
             c.sizes.forEach((s, idx) => { 
                 s.sort = idx + 1;
-                // Perfect Rounding Logic: 0.50+ is rounded up
                 s.pQty = Math.round(s.oQty * (1 + (pct/100))); 
                 tOrdQty += s.oQty; tPlanQty += s.pQty; 
                 let td = document.getElementById('pQty_' + s.id); if(td) td.innerText = s.pQty;
                 
+                let bWt = parseInt(s.bodyWt) || 0;
+                let oWt = parseInt(s.otherWt) || 0;
+                s.totalWt = bWt + oWt;
+                let tWtTd = document.getElementById('totWt_' + s.id); if(tWtTd) tWtTd.innerText = s.totalWt;
+
                 let rowLbs = 0; 
-                if(s.sWeight > 0 && s.pQty > 0) rowLbs = Math.round((s.sWeight * s.pQty) / 453.592); 
+                if(s.totalWt > 0 && s.pQty > 0) rowLbs = Math.round((s.totalWt * s.pQty) / 453.592); 
                 s.lbs = rowLbs;
                 let tdLbs = document.getElementById('lbs_' + s.id); if(tdLbs) tdLbs.innerText = rowLbs; 
                 cTotalLbs += rowLbs; 
@@ -813,7 +1253,6 @@
             }); 
             c.totalLbs = cTotalLbs; tGrandLbs += cTotalLbs;
             
-            // Calculate Yarn Required Lbs dynamically (No decimals)
             let cTotalCons = 0;
             let cTotalReq = 0;
             let cTotalAlloc = 0;
@@ -823,7 +1262,7 @@
                 let allow = parseFloat(y.allowPct) || 0;
                 y.reqLbs = Math.round(cTotalLbs * (cons / 100) * (1 + (allow / 100)));
                 
-                cTotalCons += cons;
+                cTotalCons += cons; // Sum ALL Yarns (Main + Support) for 100% check
                 cTotalReq += y.reqLbs;
 
                 let yTotalAlloc = 0;
@@ -834,7 +1273,6 @@
                 if(yTd) yTd.innerText = y.reqLbs;
             });
             
-            // Update Yarn Footer
             if(c.id === actColId) {
                 cTotalCons = Math.round(cTotalCons * 100) / 100;
                 let footCons = document.getElementById('yarnTotalCons');
@@ -869,7 +1307,7 @@
                     <td colspan="2" style="text-align:right;">MATRIX TOTAL:</td>
                     <td style="color:#e74c3c; font-size:14px;">${tableOrd}</td>
                     <td style="color:#27ae60; font-size:14px;">${tablePlan}</td>
-                    <td style="color:#007bff;">Avg (Lbs/Dz): <br><span style="font-size:14px;">${avgDzWt}</span></td>
+                    <td colspan="3"></td>
                     <td style="color:#e74c3c; font-size:14px;">${tableLbs}</td>
                     <td colspan="2"></td>
                 </tr>
@@ -878,16 +1316,18 @@
             // Update Yarn Live Summary
             let activeColor = orderData.colors.find(c => c.id === actColId);
             let yHtml = '';
-            
             let masterReq = 0;
             let masterAlloc = 0;
 
             activeColor.yarns.forEach(y => {
                 let yName = y.name || 'Unnamed Yarn';
                 let totalLots = y.lots.reduce((s, l) => s + (parseFloat(l.lbs)||0), 0);
-                let matchColor = totalLots === y.reqLbs ? '#27ae60' : '#e74c3c';
-                let reqLbsStr = y.reqLbs || 0;
                 
+                // Color formatting for individual balance
+                let yBal = totalLots - y.reqLbs;
+                let yBalColor = yBal < 0 ? '#e74c3c' : (yBal > 0 ? '#27ae60' : '#000');
+                let yBalText = yBal > 0 ? `+${yBal}` : yBal;
+
                 masterReq += y.reqLbs;
                 masterAlloc += totalLots;
                 
@@ -895,7 +1335,7 @@
                 <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 4px;">
                     <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12px; color:#2c3e50; margin-bottom: 5px;">
                         <span>${yName} (${y.consPct || 0}%)</span>
-                        <span>Req: ${reqLbsStr} Lbs</span>
+                        <span>Req: ${y.reqLbs} Lbs</span>
                     </div>
                     <div style="font-size: 11px; color: #555;">`;
                 
@@ -905,8 +1345,11 @@
                             <span>Lot: ${l.lotName || '-'}</span> <span>${l.lbs || 0} Lbs</span>
                         </div>`;
                     });
-                    yHtml += `<div style="display:flex; justify-content:space-between; padding-left: 10px; border-left: 2px solid ${matchColor}; margin-top:4px; font-weight:bold; color:${matchColor};">
+                    yHtml += `<div style="display:flex; justify-content:space-between; padding-left: 10px; border-left: 2px solid #27ae60; margin-top:4px; font-weight:bold; color:#27ae60;">
                         <span>Allocated Total:</span> <span>${totalLots} Lbs</span>
+                    </div>`;
+                    yHtml += `<div style="display:flex; justify-content:space-between; padding-left: 10px; border-left: 2px solid ${yBalColor}; margin-top:4px; font-weight:bold; color:${yBalColor};">
+                        <span>Balance:</span> <span>${yBalText} Lbs</span>
                     </div>`;
                 } else {
                     yHtml += `<span style="color:#e74c3c; font-style:italic;">No lots added</span>`;
@@ -915,16 +1358,24 @@
             });
 
             if (activeColor.yarns.length > 0) {
-                let mMatchColor = masterReq === masterAlloc ? '#27ae60' : '#e74c3c';
+                // Formatting for master balance
+                let masterBal = masterAlloc - masterReq;
+                let masterBalColor = masterBal < 0 ? '#e74c3c' : (masterBal > 0 ? '#27ae60' : '#000');
+                let masterBalText = masterBal > 0 ? `+${masterBal}` : masterBal;
+
                 yHtml += `
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 2px dashed #8e44ad;">
                     <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:#2c3e50; margin-bottom: 5px;">
                         <span>Total Required:</span>
                         <span>${masterReq} Lbs</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:${mMatchColor};">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:#27ae60; margin-bottom: 5px;">
                         <span>Total Allocated:</span>
                         <span>${masterAlloc} Lbs</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; color:${masterBalColor};">
+                        <span>Balance:</span>
+                        <span>${masterBalText} Lbs</span>
                     </div>
                 </div>`;
             }
@@ -958,14 +1409,24 @@
                 renderOps();
                 orderData.colors = [];
                 d.colors.forEach(c => {
-                    let col = { id: generateId(), name: c.name, sizes: [], yarns: [], totalLbs: 0 };
+                    let col = { 
+                        id: generateId(), name: c.name, packType: c.packType, ratio: '', 
+                        sizes: [], yarns: [], totalLbs: 0, allocations: c.allocations || {} 
+                    };
                     c.sizes.forEach(sz => {
-                        col.sizes.push({ id: generateId(), name: sz.name, oQty: sz.oQty, pQty: sz.pQty, sWeight: sz.sWeight, lbs: parseFloat(sz.lbs), bundleQty: sz.bundleQty || "", sort: 1 });
+                        col.sizes.push({ 
+                            id: generateId(), name: sz.name, oQty: sz.oQty, pQty: sz.pQty, 
+                            bodyWt: sz.bodyWt, otherWt: sz.otherWt, totalWt: sz.totalWt,
+                            lbs: parseFloat(sz.lbs), bundleQty: sz.bundleQty || "", sort: 1 
+                        });
                     });
                     c.yarns.forEach(y => {
-                        let yarnObj = { id: generateId(), name: y.name, consPct: y.consPct, allowPct: y.allowPct, reqLbs: parseInt(y.reqLbs), lots: [], showLotInput: y.lots.length === 0 };
+                        let yarnObj = { 
+                            id: y.id, name: y.name, type: y.type, parentId: y.parentId,
+                            consPct: y.consPct, allowPct: y.allowPct, reqLbs: parseInt(y.reqLbs), lots: [], showLotInput: y.lots.length === 0 
+                        };
                         y.lots.forEach(l => {
-                            yarnObj.lots.push({ id: generateId(), lotName: l.lotName, lbs: l.lbs });
+                            yarnObj.lots.push({ id: l.id, lotName: l.lotName, lbs: l.lbs });
                         });
                         col.yarns.push(yarnObj);
                     });
@@ -973,7 +1434,8 @@
                 });
                 
                 actColId = orderData.colors.length > 0 ? orderData.colors[0].id : null;
-                renderColors(); openRight(); calcAll();
+                
+                renderColors(); openRight(); calcAll(); renderAllocationTable();
                 
                 document.querySelectorAll('.highlight-change').forEach(el => el.classList.remove('highlight-change'));
                 if (window.isApprovalMode && window.changedFields.length > 0) {
@@ -1072,11 +1534,12 @@
         
         let hasError = false;
         orderData.colors.forEach(c => {
+
             if(c.sizes.length === 0) { showModal(`Please add sizes for color: ${c.name}`); hasError = true; }
             c.sizes.forEach(sz => {
                 if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasError = true; }
                 if(!sz.oQty || sz.oQty <= 0) { showModal(`ORDER QTY is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
-                if(!sz.sWeight || sz.sWeight <= 0) { showModal(`SIZE WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
+                if(!sz.bodyWt || sz.bodyWt <= 0) { showModal(`BODY WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
             });
             
             if(c.yarns.length === 0) { showModal(`Please add at least one Yarn for color: ${c.name}`); hasError = true; }
@@ -1087,20 +1550,9 @@
                 if(y.consPct === '') { showModal(`Consumption % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
                 if(y.allowPct === '') { showModal(`Allowance % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
                 
-                let cons = parseFloat(y.consPct) || 0;
-                totalCons += cons;
+                totalCons += parseFloat(y.consPct) || 0;
                 
-                let totalLotLbs = 0;
-                y.lots.forEach(l => {
-                    let lbsVal = parseFloat(l.lbs) || 0;
-                    totalLotLbs += lbsVal;
-                });
-                
-                // EXACT LBS MATCH VALIDATION
-                if(y.lots.length > 0 && Math.round(totalLotLbs) !== Math.round(y.reqLbs)) {
-                    showModal(`Mismatch Error!\nColor: ${c.name}\nYarn: ${y.name}\nRequired Lbs: ${Math.round(y.reqLbs)}\nAllocated Lots Total: ${Math.round(totalLotLbs)}\n\nYou must exactly match the required Lbs.`);
-                    hasError = true;
-                }
+                // EXACT LBS MATCH VALIDATION REMOVED AS REQUESTED
             });
             
             // EXACT 100% CONSUMPTION VALIDATION
@@ -1133,10 +1585,14 @@
             total_plan_qty: tPlan, total_lbs: tLbs, avg_wt: avgWtDz,
             colors: orderData.colors.map(c => ({ 
                 name: c.name, 
+                packType: c.packType,
+                ratio: '',
+                allocations: c.allocations,
                 sizes: c.sizes,
                 yarns: c.yarns.map(y => ({
-                    name: y.name, consPct: y.consPct, allowPct: y.allowPct, reqLbs: y.reqLbs,
-                    lots: y.lots.map(l => ({ lotName: l.lotName, lbs: parseFloat(l.lbs) || 0 }))
+                    id: y.id, name: y.name, type: y.type, parentId: y.parentId,
+                    consPct: y.consPct, allowPct: y.allowPct, reqLbs: y.reqLbs,
+                    lots: y.lots.map(l => ({ id: l.id, lotName: l.lotName, lbs: parseFloat(l.lbs) || 0 }))
                 }))
             }))
         };

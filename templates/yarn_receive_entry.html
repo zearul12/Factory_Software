@@ -18,7 +18,7 @@
     .autocomplete-wrapper { position: relative; width: 100%; }
     .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: var(--card-bg); border: 1px solid #007bff; max-height: 200px; overflow-y: auto; border-radius: 4px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-    .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; }
+    .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; border-left: 3px solid #f39c12; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 10px;}
     th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 12px; color: var(--main-text);}
@@ -55,7 +55,7 @@
             <div class="autocomplete-wrapper" style="flex: 1; max-width: 500px;">
                 <div style="position: relative;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 10px; color: #007bff;"></i>
-                    <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Search Job, Style, or PO (Min 2 chars)" oninput="searchGlobalJob(this.value)" autocomplete="off" autofocus>
+                    <input type="text" id="globalJobSearch" class="form-control" style="padding-left: 30px; border: 1px solid #007bff;" placeholder="Search Approved Job, Buyer, Style, Color or PO (Min 2 chars)..." oninput="searchGlobalJob(this.value)" autocomplete="off" autofocus>
                 </div>
                 <div id="globalJobSearchList" class="autocomplete-list"></div>
             </div>
@@ -68,11 +68,12 @@
 
         <input type="hidden" id="i_sys_id">
         <!-- Compact Inline Layout for Top Fields -->
-        <div class="grid-row" style="grid-template-columns: 1.2fr 1.5fr 1.5fr 1.5fr 0.8fr 1fr 1fr;">
+        <div class="grid-row" style="grid-template-columns: 1.2fr 1.5fr 1.5fr 1.5fr 1.5fr 0.8fr 1fr 1fr;">
             <div class="form-group"><label>JOB NO.</label><input type="text" id="m_job" class="form-control" readonly></div>
             <div class="form-group"><label>BUYER</label><input type="text" id="m_buyer" class="form-control" readonly></div>
             <div class="form-group"><label>STYLE</label><input type="text" id="m_style" class="form-control" readonly></div>
             <div class="form-group"><label>PO NUMBER(S)</label><input type="text" id="m_po" class="form-control" readonly></div>
+            <div class="form-group"><label>PACK TYPE</label><input type="text" id="m_packType" class="form-control" readonly style="color:#8e44ad;"></div>
             <div class="form-group"><label>PLAN %</label><input type="text" id="m_planPct" class="form-control" readonly></div>
             <div class="form-group"><label>ORDER QTY</label><input type="text" id="m_orderQty" class="form-control" readonly style="color:#007bff;"></div>
             <div class="form-group"><label>PLAN QTY</label><input type="text" id="m_planQty" class="form-control" readonly style="color:#27ae60;"></div>
@@ -112,6 +113,19 @@
             <button class="btn-action btn-clear" onclick="window.location.reload();"><i class="fa-solid fa-rotate-right"></i> Clear</button>
         </div>
 
+        <!-- LOT ALLOCATION MATRIX (AUTO GENERATED FROM RECEIVED YARN) -->
+        <div class="form-group" style="margin-top: 30px;" id="allocSection" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+                <label style="margin:0;"><i class="fa-solid fa-table-cells" style="color:#f39c12;"></i> RECEIVE ALLOCATION MATRIX <small style="color:#777; font-weight:normal;">(Based on Total Received Yarn)</small></label>
+                <button type="button" class="btn-action" style="padding: 5px 15px; font-size:12px; background:#f39c12; color:#fff;" onclick="generateReceiveMatrix()"><i class="fa-solid fa-bolt"></i> Generate Matrix</button>
+            </div>
+            <div id="allocContainer" style="overflow-x: auto; padding-bottom: 10px;">
+                <div style="color:#aaa; font-style:italic; font-size:12px; text-align:center; padding: 20px;">
+                    Enter received quantities and click "Generate Matrix" to calculate producible pieces.
+                </div>
+            </div>
+        </div>
+
         <!-- EXCEL-LIKE History Panel -->
         <div class="history-panel" id="historyPanel" style="display: none;">
             <h3 style="font-size: 15px; color: #8e44ad; margin-bottom: 15px;"><i class="fa-solid fa-clock-rotate-left"></i> RECEIVE HISTORY <small style="color:#7f8c8d; font-size:11px; font-weight:normal;">(Click the number badge to edit)</small></h3>
@@ -138,6 +152,7 @@
     let searchFocus = -1;
     let lotMapping = {}; 
     let groupedData = {}; 
+    window.currentOrderData = null; // Store fetched data globally for matrix calculation
     
     // Variables for Knock Feature
     window.knockSysId = "";
@@ -187,11 +202,11 @@
             if (data.length > 0) {
                 data.forEach(job => {
                     let div = document.createElement('div'); div.className = 'autocomplete-item'; 
-                    
                     let badgeColor = job.status === 'Approved' ? '#27ae60' : '#f39c12';
                     
-                    div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} (${job.style}) <br>
-                    <span style="font-size:11px; color:#888;">SYS ID: ${job.sys_id}</span>
+                    div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> ------- <b>PO:</b> ${job.pos} -- <b>Color:</b> ${job.colors} <br>
+                    <span style="font-size:11px; color:#2c3e50;">
+                    <span style="font-size:11px; color:#888;">SYS ID: ${job.sys_id}</span> 
                     <span style="font-weight:bold; color:${badgeColor}; float:right;">[${job.status}]</span>`;
                     
                     div.onmousedown = function() { 
@@ -214,6 +229,8 @@
         .then(res => {
             if(res.status === 'success') {
                 let d = res.data;
+                window.currentOrderData = d; // Store globally for matrix
+                
                 document.getElementById('i_sys_id').value = d.system_id;
                 document.getElementById('m_job').value = d.job_no;
                 document.getElementById('m_buyer').value = d.buyer_name;
@@ -222,6 +239,10 @@
                 document.getElementById('m_planPct').value = d.plan_pct + "%";
                 document.getElementById('m_orderQty').value = d.order_qty;
                 document.getElementById('m_planQty').value = d.plan_qty;
+                
+                // Show multiple pack types if different colors have different types
+                let packTypes = [...new Set(d.colors.map(c => c.pack_type))];
+                document.getElementById('m_packType').value = packTypes.join(', ');
                 
                 // Process and Flatten Data for Mapping
                 lotMapping = {};
@@ -253,9 +274,13 @@
 
                 renderYarnTable();
                 document.getElementById('tableSection').style.display = 'block';
+                document.getElementById('allocSection').style.display = 'block';
+                document.getElementById('allocContainer').innerHTML = `<div style="color:#aaa; font-style:italic; font-size:12px; text-align:center; padding: 20px;">Enter received quantities and click "Generate Matrix" to calculate producible pieces.</div>`;
                 
+                // Set focus on first input
                 setTimeout(() => { let firstRcv = document.querySelector('.rcv-input'); if(firstRcv) firstRcv.focus(); }, 100);
             
+            // SMART LOCK POPUP LOGIC
             } else if (res.status === 'unapproved') {
                 window.knockSysId = res.sys_id;
                 window.knockJobNo = res.job_no;
@@ -339,7 +364,7 @@
                     <td style="font-weight:bold;">${lot.lot_alloc_lbs}</td>
                     <td style="color:#7f8c8d; font-weight:bold;">${before}</td>
                     <td>
-                        <input type="text" class="td-input rcv-input" style="${lot.history_id ? 'border-color:#e67e22; background:#fdfae2;' : ''}" value="${lot.currRcv}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateRowRcv(${lot.idx}, this.value)">
+                        <input type="text" autocomplete="off" class="td-input rcv-input" style="${lot.history_id ? 'border-color:#e67e22; background:#fdfae2;' : ''}" value="${lot.currRcv}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateRowRcv(${lot.idx}, this.value)">
                     </td>
                     <td id="tot_${lot.idx}" style="font-weight:bold; color:#27ae60;">${dynamic_total}</td>
                     <td id="bal_${lot.idx}" style="font-weight:bold; color:${balColor}; background:${balBg};">${balText}</td>
@@ -383,20 +408,17 @@
 
             let historyList = Array.from(dateMap.values()).sort((a, b) => b.maxId - a.maxId);
             
-            // Build the Multi-Tier Excel-Like Headers
             let colorThs = ''; let lastColor = null; let colorColspan = 0;
             let yarnThs = ''; let lastYarn = null; let yarnColspan = 0;
             let lotThs = '';
 
             orderedLots.forEach((lot, i) => {
-                // Color Logic
                 if (lot.color_name !== lastColor) {
                     if (lastColor !== null) colorThs += `<th colspan="${colorColspan}" style="padding: 8px; border: 1px solid var(--border-color); text-align: center; color:#007bff;">${lastColor}</th>`;
                     lastColor = lot.color_name;
                     colorColspan = 1;
                 } else colorColspan++;
                 
-                // Yarn Logic
                 let yarnKey = lot.color_name + '_' + lot.yarn_name;
                 if (yarnKey !== lastYarn) {
                     if (lastYarn !== null) {
@@ -407,10 +429,8 @@
                     yarnColspan = 1;
                 } else yarnColspan++;
                 
-                // Lot Logic - Equal Columns Setup
                 lotThs += `<th style="padding: 6px; border: 1px solid var(--border-color); text-align: center; min-width: 100px; width: 100px;"><span style="background:#8e44ad; color:white; padding:1px 5px; border-radius:3px; font-size:10px;">Lot: ${lot.lot_name}</span></th>`;
                 
-                // Push last items
                 if (i === orderedLots.length - 1) {
                     colorThs += `<th colspan="${colorColspan}" style="padding: 8px; border: 1px solid var(--border-color); text-align: center; color:#007bff;">${lastColor}</th>`;
                     let yName = lastYarn.split('_')[1];
@@ -456,7 +476,6 @@
                         let lbs = group.lots[lot.idx].lbs;
                         rowTotal += lbs;
                         colTotals[lot.idx] += lbs;
-                        // Removed + sign before ${lbs}
                         histHtml += `<td style="border: 1px solid var(--border-color); text-align: center; font-weight:bold; color:#27ae60; background:rgba(39,174,96,0.04);">${lbs}</td>`;
                     } else {
                         histHtml += `<td style="border: 1px solid var(--border-color); text-align: center; color:#ccc;">-</td>`;
@@ -468,7 +487,6 @@
                 seq--;
             });
             
-            // History Bottom Totals
             histHtml += `</tbody>
                 <tfoot>
                     <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid #ccc;">
@@ -489,6 +507,338 @@
         } else {
             document.getElementById('historyPanel').style.display = 'none';
         }
+    }
+
+    // --- RECEIVE ALLOCATION MATRIX (BOTTLENECK LOGIC) ---
+    function generateReceiveMatrix() {
+        let sys_id = document.getElementById('i_sys_id').value;
+        if(!sys_id || !window.currentOrderData) return;
+        
+        let html = '';
+        
+        window.currentOrderData.colors.forEach(c => {
+            let mains = c.yarns.filter(y => y.type === 'Main' && y.lots.length > 0);
+            let supports = c.yarns.filter(y => y.type === 'Support' && y.lots.length > 0);
+            
+            if(mains.length === 0 || c.sizes.length === 0) return;
+
+            // BOTTLENECK CALCULATION: Total possible percentage based on received vs required
+            let minPct = 1.0;
+            let hasZeroRcv = false;
+            c.yarns.forEach(y => {
+                let reqLbs = parseFloat(y.req_lbs) || 0;
+                if(reqLbs > 0) {
+                    let totalRcv = 0;
+                    y.lots.forEach(lot => {
+                        let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(lot.id) && l.yarn_name === y.yarn_name && l.color_name === c.color_name);
+                        if(mapLot) {
+                            let before = parseFloat(mapLot.before_rcv) || 0;
+                            let curr = parseFloat(mapLot.currRcv) || 0;
+                            let old_val = parseFloat(mapLot.edit_old_val) || 0;
+                            totalRcv += (before - old_val + curr);
+                        }
+                    });
+                    if(totalRcv <= 0) hasZeroRcv = true;
+                    let pct = totalRcv / reqLbs;
+                    if(pct < minPct) minPct = pct;
+                }
+            });
+            
+            // If any yarn has 0 received, 0 pieces can be made
+            if(hasZeroRcv) minPct = 0;
+            // Cap at 100% plan qty
+            if(minPct > 1.0) minPct = 1.0;
+
+            let sizePairs = {}; 
+            c.sizes.forEach(sz => sizePairs[sz.id] = []);
+
+            if (c.pack_type === 'Solid Size') {
+                // SOLID SIZE LOGIC based on RECEIVED LBS
+                let totalColorPcs = c.sizes.reduce((sum, sz) => sum + Math.floor(sz.pQty * minPct), 0);
+                
+                mains.forEach(my => {
+                    let myTotalRcvLbs = 0;
+                    let myLotsRcv = my.lots.map(ml => {
+                        let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(ml.id));
+                        let rcv = 0;
+                        if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                        myTotalRcvLbs += rcv;
+                        return { lot: ml, rcv: rcv };
+                    });
+                    
+                    let mLotsCapacity = myLotsRcv.map((ml, idx) => {
+                        let pcs = idx === myLotsRcv.length - 1 ? 0 : Math.round(totalColorPcs * (ml.rcv / myTotalRcvLbs)) || 0;
+                        return { lot: ml.lot, pcs: pcs };
+                    });
+                    let mSum = mLotsCapacity.reduce((acc, curr) => acc + curr.pcs, 0);
+                    if(mLotsCapacity.length > 0) mLotsCapacity[mLotsCapacity.length - 1].pcs = totalColorPcs - mSum;
+
+                    let linkedSupports = supports.filter(sy => String(sy.parentId) === String(my.id));
+                    let sLotsPcsList = [];
+                    
+                    if (linkedSupports.length > 0) {
+                        linkedSupports.forEach(sy => {
+                            let syTotalRcvLbs = 0;
+                            let syLotsRcv = sy.lots.map(sl => {
+                                let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(sl.id));
+                                let rcv = 0;
+                                if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                                syTotalRcvLbs += rcv;
+                                return { lot: sl, rcv: rcv };
+                            });
+
+                            let sLotsCapacity = syLotsRcv.map((sl, idx) => {
+                                let pcs = idx === syLotsRcv.length - 1 ? 0 : Math.round(totalColorPcs * (sl.rcv / syTotalRcvLbs)) || 0;
+                                return { lot: sl.lot, yName: sy.yarn_name, pcs: pcs };
+                            });
+                            let sSum = sLotsCapacity.reduce((acc, curr) => acc + curr.pcs, 0);
+                            if(sLotsCapacity.length > 0) sLotsCapacity[sLotsCapacity.length - 1].pcs = totalColorPcs - sSum;
+                            
+                            sLotsPcsList.push(sLotsCapacity);
+                        });
+                    } else {
+                        sLotsPcsList.push([{ lot: {id: 'none', lot_name: 'No support yarn'}, yName: '', pcs: totalColorPcs }]);
+                    }
+
+                    let sLotsCapacity = sLotsPcsList[0]; 
+                    let mIdx = 0, sIdx = 0;
+                    
+                    c.sizes.forEach(sz => {
+                        let achievable_qty = Math.floor(sz.pQty * minPct);
+                        let remainingPcsForSize = achievable_qty;
+                        
+                        while (remainingPcsForSize > 0 && mIdx < mLotsCapacity.length && sIdx < sLotsCapacity.length) {
+                            let mItem = mLotsCapacity[mIdx];
+                            let sItem = sLotsCapacity[sIdx];
+                            let take = Math.min(remainingPcsForSize, mItem.pcs, sItem.pcs);
+                            
+                            if (take > 0) {
+                                sizePairs[sz.id].push({ mainYarn: my, mLot: mItem.lot, sLot: sItem.lot, sYarnName: sItem.yName, pcs: take });
+                            }
+                            
+                            remainingPcsForSize -= take;
+                            mItem.pcs -= take;
+                            sItem.pcs -= take;
+                            
+                            if (mItem.pcs <= 0) mIdx++;
+                            if (sItem.pcs <= 0) sIdx++;
+                        }
+                    });
+                });
+
+            } else {
+                // ASSORT SIZE LOGIC based on RECEIVED LBS
+                c.sizes.forEach(sz => {
+                    let achievable_qty = Math.floor(sz.pQty * minPct);
+                    
+                    mains.forEach(my => {
+                        let myTotalRcvLbs = 0;
+                        let myLotsRcv = my.lots.map(ml => {
+                            let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(ml.id));
+                            let rcv = 0;
+                            if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                            myTotalRcvLbs += rcv;
+                            return { lot: ml, rcv: rcv };
+                        });
+                        
+                        let mLotsPcs = myLotsRcv.map((ml, idx) => {
+                            let pcs = idx === myLotsRcv.length - 1 ? 0 : Math.round(achievable_qty * (ml.rcv / myTotalRcvLbs)) || 0;
+                            return { lot: ml.lot, pcs: pcs };
+                        });
+                        let mSum = mLotsPcs.reduce((acc, curr) => acc + curr.pcs, 0);
+                        if(mLotsPcs.length > 0) mLotsPcs[mLotsPcs.length - 1].pcs = achievable_qty - mSum;
+
+                        let linkedSupports = supports.filter(sy => String(sy.parentId) === String(my.id));
+                        let sLotsPcsList = [];
+                        
+                        if (linkedSupports.length > 0) {
+                            linkedSupports.forEach(sy => {
+                                let syTotalRcvLbs = 0;
+                                let syLotsRcv = sy.lots.map(sl => {
+                                    let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(sl.id));
+                                    let rcv = 0;
+                                    if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                                    syTotalRcvLbs += rcv;
+                                    return { lot: sl, rcv: rcv };
+                                });
+
+                                let sLotsPcs = syLotsRcv.map((sl, idx) => {
+                                    let pcs = idx === syLotsRcv.length - 1 ? 0 : Math.round(achievable_qty * (sl.rcv / syTotalRcvLbs)) || 0;
+                                    return { lot: sl.lot, yName: sy.yarn_name, pcs: pcs };
+                                });
+                                let sSum = sLotsPcs.reduce((acc, curr) => acc + curr.pcs, 0);
+                                if(sLotsPcs.length > 0) sLotsPcs[sLotsPcs.length - 1].pcs = achievable_qty - sSum;
+                                
+                                sLotsPcsList.push(sLotsPcs);
+                            });
+                        } else {
+                            sLotsPcsList.push([{ lot: {id: 'none', lot_name: 'No support yarn'}, yName: '', pcs: achievable_qty }]);
+                        }
+
+                        let sLotsPcs = sLotsPcsList[0];
+                        let mIdx = 0, sIdx = 0;
+
+                        while(mIdx < mLotsPcs.length && sIdx < sLotsPcs.length) {
+                            let mItem = mLotsPcs[mIdx];
+                            let sItem = sLotsPcs[sIdx];
+                            let take = Math.min(mItem.pcs, sItem.pcs);
+                            
+                            if (take > 0) {
+                                sizePairs[sz.id].push({ mainYarn: my, mLot: mItem.lot, sLot: sItem.lot, sYarnName: sItem.yName, pcs: take });
+                            }
+                            mItem.pcs -= take;
+                            sItem.pcs -= take;
+                            
+                            if (mItem.pcs <= 0) mIdx++;
+                            if (sItem.pcs <= 0) sIdx++;
+                        }
+                    });
+                });
+            }
+
+            // --- RENDER MATRIX FOR THIS COLOR ---
+            html += `<div style="margin-bottom:20px;">
+            <table style="width:100%; border-collapse: collapse; text-align:center;">
+                <thead>
+                    <tr style="background: rgba(243,156,18,0.1); border-bottom: 2px solid #f39c12;">
+                        <th style="padding: 10px; width:2.5%;">Color</th>
+                        <th style="padding: 10px; width:9%;">Main Yarn Name</th>
+                        <th style="padding: 10px; width:6%;">MAIN YARN LOT</th>
+                        <th style="padding: 10px; width:13%;">SUPPORT YARN Name LOT</th>`;
+            
+            c.sizes.forEach(s => {
+                html += `<th style="padding: 10px;">
+                            <span style="color:#007bff; font-weight:bold; font-size:14px;">${s.name}</span>
+                        </th>`;
+            });
+            
+            html += `<th style="padding: 10px; width:5%; background:rgba(0,0,0,0.05);">Total</th></tr></thead><tbody>`;
+
+            let tableRows = [];
+            mains.forEach(my => {
+                my.lots.forEach(mlot => {
+                    let uSLotsMap = new Map();
+                    c.sizes.forEach(sz => {
+                        let pairs = sizePairs[sz.id] || [];
+                        pairs.forEach(p => {
+                            if (String(p.mainYarn.id) === String(my.id) && String(p.mLot.id) === String(mlot.id)) {
+                                let key = p.sYarnName + "_" + p.sLot.id;
+                                if(!uSLotsMap.has(key)) uSLotsMap.set(key, { yName: p.sYarnName, lot: p.sLot });
+                            }
+                        });
+                    });
+
+                    let sLotsArray = Array.from(uSLotsMap.values());
+                    if (sLotsArray.length === 0) sLotsArray = [{yName: '', lot: {id:'none', lot_name: 'No support yarn'}}];
+
+                    sLotsArray.forEach(supportData => {
+                        let rowData = { my: my, mLot: mlot, syName: supportData.yName, sLot: supportData.lot, sizes: {} };
+                        c.sizes.forEach(sz => { 
+                            let pairs = sizePairs[sz.id] || [];
+                            let matchedPair = pairs.find(p => String(p.mainYarn.id) === String(my.id) && String(p.mLot.id) === String(mlot.id) && String(p.sLot.id) === String(supportData.lot.id));
+                            rowData.sizes[sz.id] = matchedPair ? matchedPair.pcs : 0;
+                        });
+                        tableRows.push(rowData);
+                    });
+                });
+            });
+
+            let colorRowspan = tableRows.length;
+            let yarnRowspans = {};
+            let lotRowspans = {};
+            tableRows.forEach(row => {
+                yarnRowspans[row.my.id] = (yarnRowspans[row.my.id] || 0) + 1;
+                lotRowspans[row.mLot.id] = (lotRowspans[row.mLot.id] || 0) + 1;
+            });
+
+            let renderedYarns = {};
+            let renderedLots = {};
+            let isFirstColor = true;
+            
+            let colTots = {};
+            c.sizes.forEach(s => colTots[s.id] = 0);
+            let grandAllocTot = 0;
+
+            tableRows.forEach(row => {
+                html += `<tr style="border-bottom: 1px solid #eee;">`;
+                
+                if (isFirstColor) {
+                    html += `<td rowspan="${colorRowspan}" style="font-weight:bold; color:#000; vertical-align:middle; text-align:center; transform: rotate(-90deg); white-space:nowrap;">${c.color_name}</td>`;
+                    isFirstColor = false;
+                }
+                if (!renderedYarns[row.my.id]) {
+                    html += `<td rowspan="${yarnRowspans[row.my.id]}" style="vertical-align:middle; font-weight:bold; color:#333;">${row.my.yarn_name}</td>`;
+                    renderedYarns[row.my.id] = true;
+                }
+                if (!renderedLots[row.mLot.id]) {
+                    html += `<td rowspan="${lotRowspans[row.mLot.id]}" style="vertical-align:middle; font-weight:bold; color:#f39c12;">
+                                <span class="badge" style="background:#f39c12; font-size:12px; padding:4px 8px;">${row.mLot.lot_name}</span>
+                             </td>`;
+                    renderedLots[row.mLot.id] = true;
+                }
+                
+                let sLabel = row.syName ? `<b>${row.syName}</b> : <span class="badge" style="background:#8e44ad; font-size:10px;">${row.sLot.lot_name}</span>` : `<span style="color:#aaa; font-style:italic;">No support yarn</span>`;
+                html += `<td style="text-align:center; vertical-align:middle;">${sLabel}</td>`;
+                
+                let rowTot = 0;
+                c.sizes.forEach(sz => {
+                    let pcs = row.sizes[sz.id];
+                    rowTot += pcs;
+                    colTots[sz.id] += pcs;
+                    html += `<td style="font-weight:bold; color:${pcs>0?'#27ae60':'#ccc'}; background:rgba(39,174,96,0.02); border:1px solid #eee;">${pcs}</td>`;
+                });
+                grandAllocTot += rowTot;
+                html += `<td style="font-weight:bold; background:rgba(0,0,0,0.02);">${rowTot}</td></tr>`;
+            });
+
+            let numMainYarns = mains.length > 0 ? mains.length : 1;
+
+            // Row 1: Knitting Production Possible
+            html += `</tbody><tfoot>
+                <tr style="background: rgba(0,0,0,0.02); font-weight: bold; border-top: 2px solid #ccc;">
+                    <td colspan="4" style="text-align:right; padding:10px;">Knitting Production Possible (Pcs):</td>`;
+            
+            let dividedGrandTot = 0;
+            let possibleMap = {};
+            c.sizes.forEach(s => {
+                let divTot = Math.round(colTots[s.id] / numMainYarns);
+                possibleMap[s.id] = divTot;
+                dividedGrandTot += divTot;
+                let color = divTot >= s.pQty ? '#27ae60' : '#e74c3c'; 
+                html += `<td style="color:${color}; font-size:14px; text-align:center; padding:10px;">${divTot}</td>`;
+            });
+            html += `<td style="color:#2c3e50; font-size:14px; text-align:center;">${dividedGrandTot}</td></tr>`;
+
+            // Row 2: Plan QTY
+            html += `<tr style="background: rgba(0,0,0,0.04); font-weight: bold;">
+                    <td colspan="4" style="text-align:right; padding:10px;">Plan QTY (Pcs):</td>`;
+            let planGrandTot = 0;
+            c.sizes.forEach(s => {
+                html += `<td style="color:#333; font-size:14px; text-align:center; padding:10px;">${s.pQty}</td>`;
+                planGrandTot += s.pQty;
+            });
+            html += `<td style="color:#333; font-size:14px; text-align:center;">${planGrandTot}</td></tr>`;
+
+            // Row 3: Balance Qty
+            html += `<tr style="background: rgba(0,0,0,0.06); font-weight: bold;">
+                    <td colspan="4" style="text-align:right; padding:10px;">Balance Qty (Pcs):</td>`;
+            let balGrandTot = 0;
+            c.sizes.forEach(s => {
+                let bal = possibleMap[s.id] - s.pQty;
+                balGrandTot += bal;
+                let color = bal < 0 ? '#e74c3c' : (bal > 0 ? '#27ae60' : '#000');
+                let text = bal > 0 ? `+${bal}` : bal;
+                html += `<td style="color:${color}; font-size:14px; text-align:center; padding:10px;">${text}</td>`;
+            });
+            
+            let gBalColor = balGrandTot < 0 ? '#e74c3c' : (balGrandTot > 0 ? '#27ae60' : '#000');
+            let gBalText = balGrandTot > 0 ? `+${balGrandTot}` : balGrandTot;
+            html += `<td style="color:${gBalColor}; font-size:14px; text-align:center;">${gBalText}</td></tr>`;
+
+            html += `</tfoot></table></div>`;
+        });
+        
+        document.getElementById('allocContainer').innerHTML = html;
     }
 
     function editHistoryRow(dateKey) {
@@ -590,7 +940,7 @@
                     lot_name: lot.lot_name,
                     lot_alloc_lbs: lot.lot_alloc_lbs,
                     record_id: lot.record_id,
-                    history_id: lot.history_id,
+                    history_id: lot.history_id, // Identifies Edit Mode
                     current_rcv: lot.currRcv
                 });
             }

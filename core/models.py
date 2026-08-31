@@ -82,16 +82,25 @@ class KnittingOrder(models.Model):
 class KnittingColor(models.Model):
     order = models.ForeignKey(KnittingOrder, on_delete=models.CASCADE, related_name='colors')
     color_name = models.CharField(max_length=100)
+    # New Fields for Pack Type & Ratio
+    pack_type = models.CharField(max_length=50, default='Solid Size')
+    assort_ratio = models.CharField(max_length=100, blank=True, null=True)
+    # To store the complex Lot-Size allocation matrix safely
+    lot_allocation_json = models.TextField(blank=True, null=True) 
 
 class KnittingYarn(models.Model):
     color = models.ForeignKey(KnittingColor, on_delete=models.CASCADE, related_name='yarns')
     yarn_name = models.CharField(max_length=150)
     consumption_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    allowance_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0) # New Field
-    req_weight_lbs = models.IntegerField(default=0) # Changed to Integer (No decimals)
+    allowance_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    req_weight_lbs = models.IntegerField(default=0)
+    # New Fields for Main/Support Relation
+    yarn_type = models.CharField(max_length=50, default='Main') # 'Main' or 'Support'
+    parent_yarn_id = models.CharField(max_length=100, blank=True, null=True) # Links to Main Yarn's frontend ID
 
 class KnittingYarnLot(models.Model):
     yarn = models.ForeignKey(KnittingYarn, on_delete=models.CASCADE, related_name='lots')
+    frontend_id = models.CharField(max_length=100, blank=True, null=True) # Needed for Matrix Mapping
     lot_name = models.CharField(max_length=100)
     allocated_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
@@ -100,7 +109,10 @@ class KnittingSize(models.Model):
     size_name = models.CharField(max_length=50)
     order_qty = models.IntegerField(default=0)
     plan_qty = models.IntegerField(default=0)
-    size_wt_gm = models.IntegerField(default=0)
+    # New Weight Fields
+    body_weight = models.IntegerField(default=0)
+    others_weight = models.IntegerField(default=0)
+    size_wt_gm = models.IntegerField(default=0) # This is now the Total Weight
     total_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     bundle_qty = models.IntegerField(default=0, blank=True, null=True)
     sort_order = models.IntegerField(default=0)

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db import transaction
 from django.db.models import Q
-from django.core.mail import send_mail # For Offline Email Knock
+from django.core.mail import send_mail
 from django.contrib.auth.models import User
 from core.models import KnittingOrder, YarnReceive, YarnReceiveHistory, PageApprover, SystemNotification
 
@@ -16,7 +16,6 @@ def yarn_receive_entry_view(request):
 def search_yarn_receive_job_ajax(request):
     query = request.GET.get('q', '').strip()
     if len(query) >= 2:
-        # Removed strict 'Approved' filter to allow knocking unapproved jobs
         orders = KnittingOrder.objects.filter(
             Q(job_no__icontains=query) | Q(buyer__buyer_name__icontains=query) | 
             Q(style_no__icontains=query) | Q(po_numbers__icontains=query) | Q(colors__color_name__icontains=query)
@@ -25,7 +24,7 @@ def search_yarn_receive_job_ajax(request):
         results = [{
             'sys_id': o.system_id, 'job_no': o.job_no, 'buyer': o.buyer.buyer_name, 
             'style': o.style_no, 'pos': o.po_numbers, 
-            'status': o.status, # Added status for UI badges
+            'status': o.status, 
             'colors': ", ".join([c.color_name for c in o.colors.all()])
         } for o in orders]
     else:
@@ -37,7 +36,6 @@ def get_yarn_receive_details_ajax(request, sys_id):
     try:
         order = KnittingOrder.objects.get(system_id=sys_id)
         
-        # Smart Lock: Send unapproved status to frontend for popup
         if order.status != 'Approved':
             return JsonResponse({
                 'status': 'unapproved', 
@@ -48,6 +46,12 @@ def get_yarn_receive_details_ajax(request, sys_id):
         
         colors_data = []
         for c in order.colors.all():
+            sizes_data = []
+            for s in c.sizes.all().order_by('sort_order'):
+                sizes_data.append({
+                    'id': s.id, 'name': s.size_name, 'pQty': s.plan_qty
+                })
+
             yarns_data = []
             for y in c.yarns.all():
                 lots_data = []
@@ -71,6 +75,7 @@ def get_yarn_receive_details_ajax(request, sys_id):
                             })
 
                     lots_data.append({
+                        'id': lot.id,
                         'record_id': rcv_record.id if rcv_record else '',
                         'lot_name': lot.lot_name,
                         'lot_alloc_lbs': float(lot.allocated_lbs),
@@ -79,14 +84,20 @@ def get_yarn_receive_details_ajax(request, sys_id):
                     })
                 
                 yarns_data.append({
+                    'id': y.id,
                     'yarn_name': y.yarn_name,
+                    'type': y.yarn_type,
+                    'parentId': y.parent_yarn_id,
                     'allow_pct': float(y.allowance_pct),
                     'req_lbs': y.req_weight_lbs,
                     'lots': lots_data
                 })
             
             colors_data.append({
+                'id': c.id,
                 'color_name': c.color_name,
+                'pack_type': c.pack_type,
+                'sizes': sizes_data,
                 'yarns': yarns_data
             })
 
@@ -102,14 +113,12 @@ def get_yarn_receive_details_ajax(request, sys_id):
 
 @login_required
 def send_approval_knock_ajax(request):
-    """ New function to send Knock to approvers """
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             sys_id = data.get('sys_id')
             job_no = data.get('job_no')
             
-            # Find Approvers for Knitting Order Entry
             approvers = PageApprover.objects.filter(page_name__icontains="Knitting")
             if not approvers.exists():
                 approver_users = User.objects.filter(is_superuser=True)
@@ -123,11 +132,9 @@ def send_approval_knock_ajax(request):
             notif_msg = f"User '{req_user}' is waiting to receive yarn for Job '{job_no}'. Please review and approve the order ASAP."
             link = f"/production/knitting/order-entry/?load_sys_id={sys_id}"
             
-            # 1. Send In-App Notification
             for u in set(approver_users):
                 SystemNotification.objects.create(user=u, title=notif_title, message=notif_msg, link=link)
             
-            # 2. Send Offline Email (if email is configured in admin panel)
             if emails:
                 try:
                     send_mail(
@@ -162,7 +169,6 @@ def save_yarn_receive_ajax(request):
                 hist_id = row.get('history_id')
                 
                 if hist_id:
-                    # UPDATE HISTORY MODE
                     hist_obj = YarnReceiveHistory.objects.get(id=hist_id)
                     rcv_obj = hist_obj.receive_record
                     old_rcv = float(hist_obj.received_lbs)
@@ -178,7 +184,6 @@ def save_yarn_receive_ajax(request):
                         rcv_obj.save()
                         saved_count += 1
                 else:
-                    # NEW RECEIVE MODE
                     if curr_rcv > 0:
                         record_id = row.get('record_id')
                         if record_id:
