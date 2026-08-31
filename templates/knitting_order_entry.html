@@ -112,7 +112,7 @@
                     <span class="job-prefix" style="border-radius: 4px 0 0 4px; border-right: none;">{{ job_prefix }}-</span>
                     <input type="text" id="job_year" class="job-input fast-nav" value="{{ current_year }}" maxlength="2" style="width: 35px; flex-shrink: 0;">
                     <span class="job-prefix" style="border-left: none; border-right: none; padding: 0 4px;">-</span>
-                    <input type="text" id="job_sequence" class="job-input fast-nav" placeholder="00000" maxlength="5" style="border-radius: 0 4px 4px 0;" onblur="padJobSeq(this)" autofocus>
+                    <input type="text" id="job_sequence" class="job-input fast-nav" placeholder="00000" maxlength="5" style="border-radius: 0 4px 4px 0;" onblur="padJobSeq(this)" autofocus autocomplete="off">
                 </div>
             </div>
             <div class="form-group">
@@ -136,7 +136,7 @@
             <div style="display: flex; gap: 10px;">
                 <div class="form-group" style="flex: 1;">
                     <label>PLAN % <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;">
+                    <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;" autocomplete="off">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label>GAUGE <span style="color:#e74c3c;">*</span></label>
@@ -184,7 +184,7 @@
             <div id="colorContainer"></div>
             
             <!-- Color Summary -->
-            <div class="summary-box" style="border-top: 2px solid #27ae60;">
+            <div class="summary-box" style="border-top: 2px solid #27ae60; margin-bottom: 30px;">
                 <div class="summary-row"><span>Total Color</span> <strong id="sumColor">0</strong></div>
                 <div class="summary-row"><span>Total Size</span> <strong id="sumSize">0</strong></div>
                 <div class="summary-row total" style="margin-top: 10px;"><span>Total Order Qty</span> <span id="sumOrdQty">0</span></div>
@@ -210,15 +210,16 @@
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px; align-items:flex-end;">
                 <div class="form-group">
                     <label>SELECTED COLOR NAME</label>
-                    <input type="text" id="currColorName" class="form-control" onchange="updateColName()">
+                    <input type="text" id="currColorName" class="form-control" onchange="updateColName()" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label>PACK TYPE</label>
-                    <select id="currPackType" class="form-control" onchange="updatePackType()">
-                        <option value="Solid Size">Solid Size</option>
-                        <option value="Assort Size">Assort Size</option>
-                    </select>
-                </div>
+    <label>PACK TYPE <span style="color:#e74c3c;">*</span></label>
+    <select id="currPackType" class="form-control" onchange="updatePackType()">
+        <option value="" disabled selected>-- Select --</option>
+        <option value="Solid Size">Solid Size</option>
+        <option value="Assort Size">Assort Size</option>
+    </select>
+</div>
             </div>
 
             <!-- Size Matrix -->
@@ -257,7 +258,7 @@
             <div class="form-group" style="margin-top: 30px;" id="yarnSection" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
                     <label style="margin:0;"><i class="fa-solid fa-layer-group" style="color:#8e44ad;"></i> YARN CONSUMPTION & LOT DETAILS <span style="color:#e74c3c;">*</span></label>
-                    <button type="button" class="btn-action" style="padding: 5px 15px; font-size:12px; background:#8e44ad;" onclick="addYarn()"><i class="fa-solid fa-plus"></i> Add Yarn</button>
+                    <button type="button" class="btn-action" style="padding: 5px 15px; font-size:12px; background:#ff0000;" onclick="addYarn()"><i class="fa-solid fa-plus"></i> Add Yarn</button>
                 </div>
                 <div id="yarnContainer"></div>
             </div>
@@ -423,33 +424,72 @@
             }
 
             // --- YARN VERTICAL NAVIGATION LOGIC ---
+            // 1. Yarn Name Jump
             if (e.target.classList.contains('yarn-name-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-name-input'));
                 let idx = inputs.indexOf(e.target);
-                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                if (idx > -1 && idx < inputs.length - 1) { 
+                    inputs[idx + 1].focus(); 
+                    inputs[idx + 1].select(); 
+                }
                 else if (idx === inputs.length - 1) {
-                    let nextCol = document.querySelector('.yarn-cons-input');
-                    if(nextCol) { nextCol.focus(); nextCol.select(); }
+                    let relSelects = Array.from(document.querySelectorAll('.relation-select'));
+                    if (relSelects.length > 1) {
+                        relSelects[1].focus();
+                        try { relSelects[1].showPicker(); } catch(err) {}
+                    } else {
+                        let nextCol = document.querySelector('.yarn-cons-input');
+                        if(nextCol) { nextCol.focus(); nextCol.select(); }
+                    }
                 }
                 return;
             }
+
+            // 2. Relation Select Dropdown Jump (MAGIC FIX)
+            if (e.target.classList.contains('relation-select')) {
+                // Here we DON'T prevent default. We let the browser select the option first, 
+                // then use setTimeout to quickly jump to the next row.
+                setTimeout(() => {
+                    let selects = Array.from(document.querySelectorAll('.relation-select'));
+                    let idx = selects.indexOf(e.target);
+                    if (idx > -1 && idx < selects.length - 1) {
+                        selects[idx + 1].focus();
+                        try { selects[idx + 1].showPicker(); } catch(err) {}
+                    }
+                    else if (idx === selects.length - 1) {
+                        let nextCol = document.querySelector('.yarn-cons-input');
+                        if(nextCol) { nextCol.focus(); nextCol.select(); }
+                    }
+                }, 50);
+                return;
+            }
+
+            // 3. Yarn Consumption Jump
             if (e.target.classList.contains('yarn-cons-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-cons-input'));
                 let idx = inputs.indexOf(e.target);
-                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                if (idx > -1 && idx < inputs.length - 1) { 
+                    inputs[idx + 1].focus(); 
+                    inputs[idx + 1].select(); 
+                }
                 else if (idx === inputs.length - 1) {
                     let nextCol = document.querySelector('.yarn-allow-input');
                     if(nextCol) { nextCol.focus(); nextCol.select(); }
                 }
                 return;
             }
+
+            // 4. Yarn Allowance Jump
             if (e.target.classList.contains('yarn-allow-input')) {
                 e.preventDefault();
                 let inputs = Array.from(document.querySelectorAll('.yarn-allow-input'));
                 let idx = inputs.indexOf(e.target);
-                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                if (idx > -1 && idx < inputs.length - 1) { 
+                    inputs[idx + 1].focus(); 
+                    inputs[idx + 1].select(); 
+                }
                 else if (idx === inputs.length - 1) {
                     let c = orderData.colors.find(x => x.id === actColId);
                     if(c && c.yarns.length > 0) {
@@ -463,6 +503,8 @@
                 }
                 return;
             }
+
+            // 5. Lot Name to Lot Lbs Jump
             if (e.target.classList.contains('lot-name-input')) {
                 e.preventDefault();
                 let yId = e.target.id.replace('add_lot_name_', '');
@@ -470,6 +512,8 @@
                 if(nextCol) { nextCol.focus(); nextCol.select(); }
                 return;
             }
+
+            // 6. Lot Lbs to Next Lot Jump
             if (e.target.classList.contains('lot-lbs-input')) {
                 e.preventDefault();
                 let yId = e.target.id.replace('add_lot_lbs_', '');
@@ -587,24 +631,35 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         if(n) { 
             if(orderData.colors.some(c => c.name.toLowerCase() === n.toLowerCase())) { showModal(`Color '${n}' already exists!`); return; }
             let c = { 
-                id: generateId(), name: n, packType: 'Solid Size', 
+                id: generateId(), name: n, packType: '', 
                 sizes: [], yarns: [{id: generateId(), name: '', type: 'Main', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true}], 
                 allocations: {}, totalLbs: 0 
             }; 
             orderData.colors.push(c); actColId = c.id; renderColors(); openRight(); 
+            
+            // MAGIC: Auto Focus & Open Pack Type
+            setTimeout(() => {
+                let el = document.getElementById('currPackType');
+                if(el) { el.focus(); try { el.showPicker(); } catch(e) {} }
+            }, 50);
         } 
     }
     
     function renderColors() { 
-        document.getElementById('colorContainer').innerHTML = orderData.colors.map(c => `
-            <div class="color-item ${c.id === actColId ? 'active' : ''}" onclick="selCol('${c.id}')">
+        document.getElementById('colorContainer').innerHTML = orderData.colors.map((c, cIdx) => {
+            // Highlight specific color badge if changed
+            let colHi = (window.isApprovalMode && window.changedFields.includes(`col_badge_${cIdx}`)) ? 'highlight-change' : '';
+            
+            return `
+            <div id="col_badge_${cIdx}" class="color-item ${c.id === actColId ? 'active' : ''} ${colHi}" onclick="selCol('${c.id}')">
                 <span style="display:flex; align-items:center; gap:8px;">
                     <i class="fa-solid fa-palette" style="color:#007bff;"></i>
                     <span id="col_name_${c.id}">${c.name}</span>
                 </span>
                 <span id="col_lbs_${c.id}" style="color:#e74c3c; font-weight:bold;">${c.totalLbs || 0} Lbs</span>
                 <span style="color:#e74c3c; cursor:pointer;" onclick="event.stopPropagation(); delCol('${c.id}')"><i class="fa-solid fa-trash-can"></i></span>
-            </div>`).join(''); 
+            </div>`;
+        }).join(''); 
         calcAll(); 
     }
     
@@ -614,7 +669,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
     function openRight() { 
         if(!actColId) { 
             document.getElementById('currColorName').value = '';
-            document.getElementById('currPackType').value = 'Solid Size';
+            document.getElementById('currPackType').value = ''; // Reset
             document.getElementById('sizeTbody').innerHTML = `<tr><td colspan="10" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>`;
             document.getElementById('sizeTfoot').innerHTML = '';
             document.getElementById('yarnSection').style.display = 'none';
@@ -623,7 +678,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         } 
         let c = orderData.colors.find(x => x.id === actColId); 
         document.getElementById('currColorName').value = c.name; 
-        document.getElementById('currPackType').value = c.packType || 'Solid Size';
+        document.getElementById('currPackType').value = c.packType || '';
         
         document.getElementById('yarnSection').style.display = 'block';
         document.getElementById('allocSection').style.display = 'block';
@@ -642,6 +697,12 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
     function updatePackType() {
         let c = orderData.colors.find(x => x.id === actColId);
         c.packType = document.getElementById('currPackType').value;
+        
+        // MAGIC: Auto Focus & Open Size Format Selection
+        setTimeout(() => {
+            let el = document.getElementById('sizeFormatSelect');
+            if(el) { el.focus(); try { el.showPicker(); } catch(e) {} }
+        }, 50);
     }
     
     function loadSizes() { 
@@ -655,30 +716,32 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
     }
     
     function renderSizes(c) { 
+        let cIdx = orderData.colors.findIndex(x => x.id === c.id);
+        
         document.getElementById('sizeTbody').innerHTML = c.sizes.map((s, i) => {
-            let safeCName = c.name.replace(/\s+/g, '_');
-            let safeSName = s.name.replace(/\s+/g, '_');
-            let qId = `qty_${safeCName}_${safeSName}`;
-            let bwId = `bwt_${safeCName}_${safeSName}`;
-            let bId = `bndl_${safeCName}_${safeSName}`;
+            let szNameId = `sz_name_${cIdx}_${i}`;
+            let qId = `qty_${cIdx}_${i}`;
+            let bwId = `bwt_${cIdx}_${i}`;
+            let bId = `bndl_${cIdx}_${i}`;
             
-            let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : '';
-            let wHi = (window.isApprovalMode && window.changedFields.includes(bwId)) ? 'highlight-change' : ''; 
-            let bHi = (window.isApprovalMode && window.changedFields.includes(bId)) ? 'highlight-change' : '';
+            // SMART FIX: Check exact index for precise highlighting
+            let szHi = (window.isApprovalMode && window.changedFields.includes(szNameId)) ? 'highlight-change' : '';
+            let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : ''; 
+            // Body wt & bundle qty are ignored from approval, so no highlight logic here
             
             return `
             <tr>
                 <td>${i+1}</td>
-                <td><input type="text" class="td-input" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
-                <td><input type="text" id="${qId}" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
+                <td><input type="text" id="${szNameId}" autocomplete="off" class="td-input ${szHi}" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
+                <td><input type="text" id="${qId}" autocomplete="off" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
                 <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
                 
-                <td><input type="text" id="${bwId}" class="td-input matrix-body-wt ${wHi}" value="${s.bodyWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBWt('${s.id}', this.value)"></td>
-                <td><input type="text" class="td-input matrix-other-wt" value="${s.otherWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOWt('${s.id}', this.value)"></td>
+                <td><input type="text" id="${bwId}" autocomplete="off" class="td-input matrix-body-wt" value="${s.bodyWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBWt('${s.id}', this.value)"></td>
+                <td><input type="text" autocomplete="off" class="td-input matrix-other-wt" value="${s.otherWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOWt('${s.id}', this.value)"></td>
                 <td id="totWt_${s.id}" style="font-weight:bold; background:rgba(0,0,0,0.02);">${s.totalWt}</td>
                 
                 <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
-                <td><input type="text" id="${bId}" class="td-input matrix-bundle ${bHi}" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
+                <td><input type="text" id="${bId}" autocomplete="off" class="td-input matrix-bundle" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
                 <td>
                     <button class="btn-circle btn-plus" style="margin-right:10px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
                     <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
@@ -698,7 +761,8 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
     // --- Modern Yarn & Lot Management ---
     function addYarn() {
         let c = orderData.colors.find(x => x.id === actColId);
-        c.yarns.push({id: generateId(), name: '', type: 'Main', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true});
+        // Default relation is empty for new yarns
+        c.yarns.push({id: generateId(), name: '', type: '', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true});
         renderYarns(c); calcAll(); renderAllocationTable();
     }
     function delYarn(yId) {
@@ -713,7 +777,29 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         let y = c.yarns.find(x => x.id === yId);
         y[field] = val; 
         calcAll(); 
-        if(field === 'name' || field === 'type' || field === 'parentId') renderAllocationTable();
+        
+        if(field === 'name') {
+            // Dynamically update ALL relation dropdowns without losing focus
+            let mainYarns = c.yarns.filter(yarn => yarn.type === 'Main');
+            c.yarns.forEach((yarn, yIdx) => {
+                let sel = document.getElementById(`rel_sel_${yarn.id}`);
+                if (sel) {
+                    let currentVal = sel.value;
+                    let relOptions = `<option value="" disabled ${yarn.type === '' ? 'selected' : ''}>-- Select --</option>
+                                      <option value="Main" ${yarn.type==='Main'?'selected':''}>Main Yarn</option>`;
+                    mainYarns.forEach(my => {
+                        if(String(my.id) !== String(yarn.id) && my.name) {
+                            relOptions += `<option value="${my.id}" ${String(yarn.parentId)===String(my.id)?'selected':''}>Support to: ${my.name.substring(0,10)}</option>`;
+                        }
+                    });
+                    sel.innerHTML = relOptions;
+                    sel.value = currentVal; // Restore selection
+                }
+            });
+            renderAllocationTable();
+        } else if(field === 'type' || field === 'parentId') {
+            renderAllocationTable();
+        }
     }
 
     function updateYarnRelation(yId, val) {
@@ -756,8 +842,13 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             if (jumpToNextYarn) {
                 if (yIdx < c.yarns.length - 1) {
                     let nextY = c.yarns[yIdx + 1];
-                    nextY.showLotInput = true; 
-                    nextFocusId = `add_lot_name_${nextY.id}`;
+                    // SMART FIX: Only open the next lot input if it's currently empty
+                    if(nextY.lots.length === 0) {
+                        nextY.showLotInput = true; 
+                        nextFocusId = `add_lot_name_${nextY.id}`;
+                    } else {
+                        nextFocusId = null;
+                    }
                 } else {
                     nextFocusId = null; 
                 }
@@ -811,25 +902,21 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
 
         c.yarns.forEach((y, yIdx) => {
             let safeCName = c.name.replace(/\s+/g, '_');
-            
             let nameHi = (window.isApprovalMode && window.changedFields.includes(`y_name_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
             let consHi = (window.isApprovalMode && window.changedFields.includes(`y_cons_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
             let allowHi = (window.isApprovalMode && window.changedFields.includes(`y_allow_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
             let reqHi = (window.isApprovalMode && window.changedFields.includes(`y_req_${safeCName}_${yIdx}`)) ? 'highlight-change' : '';
 
-            // Generate Tags for existing lots
             let lotsHtml = y.lots.map((l, lIdx) => {
-                let lNameHi = (window.isApprovalMode && window.changedFields.includes(`l_name_${safeCName}_${yIdx}_${lIdx}`)) ? 'highlight-change' : '';
-                let lLbsHi = (window.isApprovalMode && window.changedFields.includes(`l_lbs_${safeCName}_${yIdx}_${lIdx}`)) ? 'highlight-change' : '';
-                let tagClass = (lNameHi || lLbsHi) ? 'highlight-change' : '';
-                return `<span class="tag ${tagClass}" style="background:#8e44ad; font-size:11px; padding:4px 8px; margin-bottom:5px;">
+                return `<span class="tag" style="background:#8e44ad; font-size:11px; padding:4px 8px; margin-bottom:5px;">
                             ${l.lotName}: ${l.lbs} Lbs 
                             <i class="fa-solid fa-times" style="cursor:pointer; margin-left:6px; color:#ffb8b8;" onclick="delYarnLot('${y.id}', '${l.id}')"></i>
                         </span>`;
             }).join('');
 
-            // Build Dropdown for Relation
-            let relOptions = `<option value="Main" ${y.type==='Main'?'selected':''}>Main Yarn</option>`;
+            // Empty option added for Relation
+            let relOptions = `<option value="" disabled ${y.type === '' ? 'selected' : ''}>-- Select --</option>
+                              <option value="Main" ${y.type==='Main'?'selected':''}>Main Yarn</option>`;
             mainYarns.forEach(my => {
                 if(String(my.id) !== String(y.id) && my.name) {
                     relOptions += `<option value="${my.id}" ${String(y.parentId)===String(my.id)?'selected':''}>Support to: ${my.name.substring(0,10)}</option>`;
@@ -838,27 +925,30 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
 
             html += `
             <tr style="background: ${y.type==='Support'?'rgba(0,0,0,0.04)':'rgba(0,0,0,0.01)'}; border-left: ${y.type==='Support'?'3px solid #8e44ad':''};">
-                <td><input type="text" class="td-input yarn-name-input ${nameHi}" value="${y.name}" placeholder="e.g. 2/32 Acrylic" oninput="updateYarn('${y.id}', 'name', this.value)"></td>
+                <td><input type="text" autocomplete="off" class="td-input yarn-name-input ${nameHi}" value="${y.name}" placeholder="e.g. 2/32 Acrylic" oninput="updateYarn('${y.id}', 'name', this.value)"></td>
                 <td>
-                    <select class="td-input" style="padding:4px; font-size:11px; font-weight:normal;" onchange="updateYarnRelation('${y.id}', this.value)">
+                    <select id="rel_sel_${y.id}" class="td-input relation-select" style="padding:4px; font-size:11px; font-weight:normal;" onchange="updateYarnRelation('${y.id}', this.value)" ${yIdx === 0 ? 'disabled' : ''}>
                         ${relOptions}
                     </select>
                 </td>
-                <td><input type="text" class="td-input yarn-cons-input ${consHi}" value="${y.consPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'consPct', this.value)"></td>
-                <td><input type="text" class="td-input yarn-allow-input ${allowHi}" value="${y.allowPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'allowPct', this.value)"></td>
+                <td><input type="text" autocomplete="off" class="td-input yarn-cons-input ${consHi}" value="${y.consPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'consPct', this.value)"></td>
+                <td><input type="text" autocomplete="off" class="td-input yarn-allow-input ${allowHi}" value="${y.allowPct}" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateYarn('${y.id}', 'allowPct', this.value)"></td>
                 <td id="reqLbs_${y.id}" class="${reqHi}" style="font-weight:bold; color:#e74c3c; font-size:14px;">${y.reqLbs}</td>
                 
                 <td style="text-align:left; padding: 10px;">
-                    <div style="display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
-                        ${lotsHtml}
-                        
-                        ${y.showLotInput ? `
-                            <input type="text" id="add_lot_name_${y.id}" class="td-input lot-name-input" placeholder="+ Lot Name" style="font-size:11px; width:100px;">
-                            <input type="text" id="add_lot_lbs_${y.id}" class="td-input lot-lbs-input" placeholder="Lbs" style="font-size:11px; width:70px;" oninput="this.value=this.value.replace(/[^0-9.]/g,'');">
-                            <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#27ae60;" onclick="addLotFromRow('${y.id}', false)" title="Add & Stay"><i class="fa-solid fa-plus"></i></button>
-                        ` : `
-                            <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#8e44ad;" onclick="showLotInput('${y.id}')"><i class="fa-solid fa-plus"></i> Add Lot</button>
-                        `}
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; height:100%;">
+                        <div style="display:flex; flex-wrap:wrap; gap:5px; align-items:center; flex:1;">
+                            ${lotsHtml}
+                        </div>
+                        <div style="margin-left: 10px; flex-shrink:0;">
+                            ${y.showLotInput ? `
+                                <input type="text" id="add_lot_name_${y.id}" autocomplete="off" class="td-input lot-name-input" placeholder="+ Lot Name" style="font-size:11px; width:100px;">
+                                <input type="text" id="add_lot_lbs_${y.id}" autocomplete="off" class="td-input lot-lbs-input" placeholder="Lbs" style="font-size:11px; width:70px;" oninput="this.value=this.value.replace(/[^0-9.]/g,'');">
+                                <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#27ae60;" onclick="addLotFromRow('${y.id}', false)" title="Add & Stay"><i class="fa-solid fa-plus"></i></button>
+                            ` : `
+                                <button class="btn-action" style="padding:4px 10px; font-size:11px; background:#f20505;" onclick="showLotInput('${y.id}')"><i class="fa-solid fa-plus"></i> Add Lot</button>
+                            `}
+                        </div>
                     </div>
                 </td>
                 
@@ -1535,6 +1625,11 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         let hasError = false;
         orderData.colors.forEach(c => {
 
+            if(!c.packType) { 
+        showModal(`PACK TYPE is missing in color: ${c.name}`); 
+        hasError = true; 
+    }
+
             if(c.sizes.length === 0) { showModal(`Please add sizes for color: ${c.name}`); hasError = true; }
             c.sizes.forEach(sz => {
                 if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasError = true; }
@@ -1546,8 +1641,21 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             
             let totalCons = 0;
             c.yarns.forEach(y => {
-                if(!y.name.trim()) { showModal(`Yarn name is missing in color: ${c.name}`); hasError = true; }
-                if(y.consPct === '') { showModal(`Consumption % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
+
+    if(!y.type) { 
+        showModal(`Relation (Main/Support) is missing for yarn '${y.name}' in color: ${c.name}`); 
+        hasError = true; 
+    }
+
+    if(!y.name.trim()) { 
+        showModal(`Yarn name is missing in color: ${c.name}`); 
+        hasError = true; 
+    }
+
+    if(y.consPct === '') { 
+        showModal(`Consumption % is missing for yarn '${y.name}' in color: ${c.name}`); 
+        hasError = true; 
+    }
                 if(y.allowPct === '') { showModal(`Allowance % is missing for yarn '${y.name}' in color: ${c.name}`); hasError = true; }
                 
                 totalCons += parseFloat(y.consPct) || 0;

@@ -66,15 +66,13 @@ def save_knitting_order_ajax(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-
-            # --- NEW SMART VALIDATION: Check against existing Yarn Receives ---
+            
+            # --- SMART VALIDATION: Check against existing Yarn Receives ---
             job_no = data.get('job_no')
             for c_data in data.get('colors', []):
                 for y_data in c_data.get('yarns', []):
                     for l_data in y_data.get('lots', []):
                         new_alloc_lbs = to_f(l_data.get('lbs'))
-                        
-                        # Check if this exact lot has already been received in the store
                         rcv_record = YarnReceive.objects.filter(
                             job_no=job_no,
                             color=c_data.get('name'),
@@ -82,33 +80,81 @@ def save_knitting_order_ajax(request):
                             lot_name=l_data.get('lotName')
                         ).first()
                         
-                        # If received lbs is greater than the newly typed allocated lbs, BLOCK IT!
                         if rcv_record and new_alloc_lbs < float(rcv_record.total_received_lbs):
                             return JsonResponse({
                                 'status': 'error', 
                                 'message': f"Logic Error!\n\nLot: '{l_data.get('lotName')}' ({y_data.get('name')})\nAlready Received: {float(rcv_record.total_received_lbs)} Lbs\nNew Allocation: {new_alloc_lbs} Lbs\n\nYou cannot reduce allocation below the already received quantity. Please reduce the received quantity from 'Yarn Receive' page first."
                             })
             # --- END OF VALIDATION ---
-            
+
             buyer, _ = Buyer.objects.get_or_create(buyer_name=data.get('buyer_name'), defaults={'is_active': True})
             
             sys_id = data.get('system_id', '')
             order = KnittingOrder.objects.filter(system_id=sys_id).first() if sys_id else None
             is_new = False
-            changed = []
+            major_changed = []
+            old_status = ""
             
             if order:
                 old_status = order.status
-                if str(order.job_no) != str(data['job_no']): changed.append('job_sequence')
-                if str(order.buyer.buyer_name) != str(buyer.buyer_name): changed.append('m_buyer')
-                if str(order.style_no) != str(data['style_no']): changed.append('m_style')
-                if str(order.po_numbers) != str(data['po_list']): changed.append('m_po')
-                if str(order.plan_pct) != str(data['plan_pct']): changed.append('m_planPct')
-                if str(order.gauge) != str(data['gauge']): changed.append('m_gauge')
-                if str(order.kcd_date) != str(data['kcd_date']): changed.append('m_kcdDate')
-                if str(order.operations) != str(data['operations']): changed.append('opContainer')
                 
-                order.changed_fields = ",".join(changed) if old_status == 'Approved' else ""
+                # --- CHECK TOP-LEVEL FIELDS (These will trigger Pending and Highlight) ---
+                if str(order.job_no) != str(data['job_no']): major_changed.append('job_sequence')
+                if str(order.buyer.buyer_name) != str(buyer.buyer_name): major_changed.append('m_buyer')
+                if str(order.style_no) != str(data['style_no']): major_changed.append('m_style')
+                if str(order.po_numbers) != str(data['po_list']): major_changed.append('m_po')
+                if str(order.plan_pct) != str(data['plan_pct']): major_changed.append('m_planPct')
+                if str(order.gauge) != str(data['gauge']): major_changed.append('m_gauge')
+                
+                # Date format fix to ensure it checks correctly
+                db_kcd = order.kcd_date.strftime('%Y-%m-%d') if order.kcd_date else ''
+                if str(db_kcd) != str(data['kcd_date']): major_changed.append('m_kcdDate')
+                
+                # --- CHECK SIZE MATRIX & COLOR ---
+                if float(order.total_order_qty) != float(data['total_order_qty']) or float(order.total_plan_qty) != float(data['total_plan_qty']):
+                    major_changed.append('size_matrix')
+                
+                old_colors = list(order.colors.all().order_by('id'))
+                new_colors = data['colors']
+                
+                if len(old_colors) != len(new_colors):
+                    major_changed.append('size_matrix')
+                
+                for c_idx, c_data in enumerate(new_colors):
+                    if c_idx < len(old_colors):
+                        old_c = old_colors[c_idx]
+                        
+                        # Check Color Name
+                        if str(old_c.color_name) != str(c_data['name']):
+                            major_changed.append('currColorName')
+                            major_changed.append(f'col_badge_{c_idx}')
+                            
+                        old_sizes = list(old_c.sizes.all().order_by('sort_order'))
+                        new_sizes = c_data['sizes']
+                        
+                        if len(old_sizes) != len(new_sizes):
+                            major_changed.append('size_matrix')
+                            
+                        for s_idx, s_data in enumerate(new_sizes):
+                            if s_idx < len(old_sizes):
+                                old_s = old_sizes[s_idx]
+                                # Check Size Name
+                                if str(old_s.size_name) != str(s_data['name']):
+                                    major_changed.append(f'sz_name_{c_idx}_{s_idx}')
+                                # Check Order Qty
+                                if str(old_s.order_qty) != str(s_data['oQty']):
+                                    major_changed.append(f'qty_{c_idx}_{s_idx}')
+                    else:
+                        major_changed.append('size_matrix')
+                
+                # Smart Status Check: Keep Approved if no major changes
+                if old_status == 'Approved' and len(major_changed) == 0:
+                    order.status = 'Approved'
+                    order.changed_fields = "" # Clear highlights
+                else:
+                    order.status = 'Pending'
+                    order.changed_fields = ",".join(major_changed)
+                    
                 order.colors.all().delete()
             else:
                 is_new = True
@@ -130,7 +176,10 @@ def save_knitting_order_ajax(request):
             order.total_plan_qty = data['total_plan_qty']
             order.total_weight_lbs = data['total_lbs']
             order.avg_weight_dz = data['avg_wt']
-            order.status = 'Pending'
+            
+            if is_new:
+                order.status = 'Pending'
+            
             order.save()
 
             for col_data in data['colors']:
@@ -153,7 +202,6 @@ def save_knitting_order_ajax(request):
                         bundle_qty=int(sz_data.get('bundleQty') or 0), sort_order=sz_data['sort']
                     )
                 
-                # SMART FIX: Map frontend IDs to Backend IDs
                 frontend_yarn_map = {}
                 
                 for y_data in col_data.get('yarns', []):
@@ -163,7 +211,7 @@ def save_knitting_order_ajax(request):
                         allowance_pct=to_f(y_data.get('allowPct')), 
                         req_weight_lbs=to_i(y_data.get('reqLbs')),
                         yarn_type=y_data.get('type', 'Main'),
-                        parent_yarn_id=y_data.get('parentId', '') # Temporarily saving frontend ID
+                        parent_yarn_id=y_data.get('parentId', '') 
                     )
                     frontend_yarn_map[y_data.get('id', '')] = str(y_obj.id)
                     
@@ -173,21 +221,21 @@ def save_knitting_order_ajax(request):
                             lot_name=l_data['lotName'], allocated_lbs=to_f(l_data.get('lbs'))
                         )
                         
-                # Replace Temporary IDs with Exact Database IDs
                 for y_obj in col_obj.yarns.filter(yarn_type='Support'):
                     if y_obj.parent_yarn_id in frontend_yarn_map:
                         y_obj.parent_yarn_id = frontend_yarn_map[y_obj.parent_yarn_id]
                         y_obj.save()
 
-            approvers = list(PageApprover.objects.filter(page_name__icontains="Knitting").values_list('user_id', flat=True))
-            superadmins = list(User.objects.filter(is_superuser=True).values_list('id', flat=True))
-            notify_users = set(approvers + superadmins)
-            
-            notif_title = f"Order Updated: {order.job_no}" if not is_new and order.changed_fields else f"Order Approval: {order.job_no}"
-            notif_msg = f"Buyer: {buyer.buyer_name} (Style: {order.style_no}) requires approval."
-            
-            for uid in notify_users:
-                SystemNotification.objects.create(user_id=uid, title=notif_title, message=notif_msg, link=f"/production/knitting/order-entry/?load_sys_id={order.system_id}")
+            if is_new or (not is_new and order.status == 'Pending' and (old_status != 'Pending' or len(major_changed) > 0)):
+                approvers = list(PageApprover.objects.filter(page_name__icontains="Knitting").values_list('user_id', flat=True))
+                superadmins = list(User.objects.filter(is_superuser=True).values_list('id', flat=True))
+                notify_users = set(approvers + superadmins)
+                
+                notif_title = f"Order Updated: {order.job_no}" if not is_new else f"Order Approval: {order.job_no}"
+                notif_msg = f"Buyer: {buyer.buyer_name} (Style: {order.style_no}) requires approval."
+                
+                for uid in notify_users:
+                    SystemNotification.objects.create(user_id=uid, title=notif_title, message=notif_msg, link=f"/production/knitting/order-entry/?load_sys_id={order.system_id}")
 
             return JsonResponse({'status': 'success', 'is_update': not is_new, 'sys_id': order.system_id})
         except Exception as e:
@@ -200,7 +248,7 @@ def get_knitting_order_details_ajax(request, sys_id):
         order = KnittingOrder.objects.get(system_id=sys_id)
         
         colors_data = []
-        for c in order.colors.all():
+        for c in order.colors.all().order_by('id'):  # <--- এখানে .order_by('id') অ্যাড করুন
             sizes = []
             for s in c.sizes.all().order_by('sort_order'):
                 sizes.append({
@@ -213,7 +261,7 @@ def get_knitting_order_details_ajax(request, sys_id):
             for y in c.yarns.all():
                 lots = [{'id': l.frontend_id, 'lotName': l.lot_name, 'lbs': str(l.allocated_lbs).rstrip('0').rstrip('.')} for l in y.lots.all()]
                 yarns.append({
-                    'id': str(y.id), # SMART FIX: Exposing exact Database ID to Frontend
+                    'id': str(y.id),
                     'name': y.yarn_name, 
                     'type': y.yarn_type,
                     'parentId': y.parent_yarn_id,
