@@ -183,12 +183,19 @@ def save_knitting_order_ajax(request):
             order.save()
 
             for col_data in data['colors']:
+                # --- SMART FIX: Map frontend Size IDs to actual Size Names for a readable Matrix ---
+                frontend_size_map = {sz.get('id', ''): sz.get('name', '') for sz in col_data.get('sizes', [])}
+                raw_allocs = col_data.get('allocations', {})
+                clean_allocs = {}
+                for alloc_key, sz_dict in raw_allocs.items():
+                    clean_allocs[alloc_key] = {frontend_size_map.get(k, k): v for k, v in sz_dict.items()}
+                
                 col_obj = KnittingColor.objects.create(
                     order=order, 
                     color_name=col_data['name'],
                     pack_type=col_data.get('packType', 'Solid Size'),
                     assort_ratio=col_data.get('ratio', ''),
-                    lot_allocation_json=json.dumps(col_data.get('allocations', {}))
+                    lot_allocation_json=json.dumps(clean_allocs) # Now saved with actual Size Names!
                 )
                 
                 for sz_data in col_data['sizes']:

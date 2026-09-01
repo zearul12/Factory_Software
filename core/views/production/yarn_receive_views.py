@@ -184,7 +184,7 @@ def save_yarn_receive_ajax(request):
                         rcv_obj.save()
                         saved_count += 1
                 else:
-                    if curr_rcv > 0:
+                    if curr_rcv != 0:
                         record_id = row.get('record_id')
                         if record_id:
                             rcv_obj = YarnReceive.objects.get(id=record_id)

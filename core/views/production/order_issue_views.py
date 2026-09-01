@@ -48,23 +48,58 @@ def get_issue_job_details_ajax(request, sys_id):
         operations = [op.strip() for op in order.operations.split(',')] if order.operations else []
         
         matrix_data = []
-        lots_set = set()
+        allocations_data = [] # Rules: Which Lot for Which Size?
+        
         for c in order.colors.all():
-            if c.lots: lots_set.update([l.strip() for l in c.lots.split(',')])
+            # Map frontend lot IDs to actual Lot Names
+            lot_map = {}
+            for y in c.yarns.all():
+                for l in y.lots.all():
+                    if l.frontend_id:
+                        lot_map[str(l.frontend_id)] = l.lot_name
+            
+            # Parse allocation matrix safely
+            if c.lot_allocation_json:
+                try:
+                    alloc_dict = json.loads(c.lot_allocation_json)
+                    for alloc_key, sizes_dict in alloc_dict.items():
+                        parts = alloc_key.split('_')
+                        if len(parts) >= 3:
+                            m_lot_name = lot_map.get(parts[1], 'Unknown')
+                            s_lot_name = lot_map.get(parts[2], '')
+                            
+                            # Combine Main and Support lot names for display
+                            display_lot = m_lot_name
+                            if s_lot_name and s_lot_name != 'No support yarn':
+                                display_lot = f"{m_lot_name} + {s_lot_name}"
+                            
+                            for sz_name, qty in sizes_dict.items():
+                                if int(qty) > 0:
+                                    allocations_data.append({
+                                        'color': c.color_name,
+                                        'size': sz_name,
+                                        'lot': display_lot,
+                                        'alloc_qty': int(qty)
+                                    })
+                except Exception as e:
+                    print("Error parsing allocation:", e)
+
             for s in c.sizes.all():
                 matrix_data.append({
                     'color': c.color_name, 'size': s.size_name,
                     'plan_qty': s.plan_qty, 'bundle_qty': s.bundle_qty or 0, 'size_wt': s.size_wt_gm or 0
                 })
-
+        
         issues = KnittingIssue.objects.filter(job_no=order.job_no).exclude(status='Deleted')
-        issue_list = [{'color': i.color, 'size': i.size, 'op': i.operation, 'qty': i.issue_qty, 'recv': 0} for i in issues]
+        issue_list = [{'color': i.color, 'size': i.size, 'lot': i.lot, 'op': i.operation, 'qty': i.issue_qty, 'recv': 0} for i in issues]
         
         data = {
             'job_no': order.job_no, 'buyer_name': order.buyer.buyer_name,
             'style_no': order.style_no, 'po_numbers': order.po_numbers,
-            'colors': colors, 'lots': list(lots_set), 'operations': operations,
-            'matrix': matrix_data, 'issues': issue_list
+            'colors': colors, 'operations': operations,
+            'matrix': matrix_data, 
+            'alloc_rules': allocations_data, # <--- Sending Strict Matrix Rules to Frontend
+            'issues': issue_list
         }
         return JsonResponse({'status': 'success', 'data': data})
     except Exception as e:

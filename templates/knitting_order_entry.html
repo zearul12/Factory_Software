@@ -179,7 +179,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <strong style="font-size:14px; color:var(--main-text);">COLOR LIST <span style="color:#e74c3c;">*</span></strong>
             </div>
-            <input type="text" id="fastColorInput" class="form-control" placeholder="+ Type Color & Enter" style="margin-bottom:10px; border:1px dashed #27ae60;" onkeydown="if(event.key === 'Enter'){ createColor(this.value); this.value=''; }">
+            <input type="text" id="fastColorInput" class="form-control" placeholder="+ Type Color & Enter" style="margin-bottom:10px; border:1px dashed #27ae60;" onkeydown="if(event.key === 'Enter'){ createColor(this.value); this.value=''; }" autocomplete="off">
             
             <div id="colorContainer"></div>
             
@@ -1173,9 +1173,9 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             <thead>
                 <tr style="background: rgba(243,156,18,0.1); border-bottom: 2px solid #f39c12;">
                     <th style="padding: 10px; width:2.5%;">Color</th>
-                    <th style="padding: 10px; width:9%;">Main Yarn Name</th>
+                    <th style="padding: 10px; width:8%;">Main Yarn Name</th>
                     <th style="padding: 10px; width:6%;">MAIN YARN LOT</th>
-                    <th style="padding: 10px; width:13%;">SUPPORT YARN Name LOT</th>`;
+                    <th style="padding: 10px; width:15%;">SUPPORT YARN Name LOT</th>`;
         
         c.sizes.forEach(s => {
             html += `<th style="padding: 10px;"><span style="color:#007bff; font-weight:bold; font-size:14px;">${s.name}</span></th>`;

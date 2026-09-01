@@ -20,12 +20,15 @@
     .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
     .autocomplete-item:hover, .autocomplete-item.active { background: #007bff; color: white; border-left: 3px solid #f39c12; }
 
+    /* REDUCED ROW HEIGHTS */
     table { width: 100%; border-collapse: collapse; margin-top: 10px;}
-    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: center; font-size: 12px; color: var(--main-text);}
-    th { background: rgba(0,0,0,0.05); font-weight: 600;}
+    th { background: rgba(0,0,0,0.05); font-weight: 600; padding: 6px; text-align: center; font-size: 11px; border: 1px solid var(--border-color); color: var(--main-text);}
+    td { border: 1px solid var(--border-color); padding: 4px; text-align: center; font-size: 11px; color: var(--main-text);}
     
-    .td-input { width: 100%; padding: 6px; border: 2px solid #007bff; border-radius: 3px; text-align: center; background: rgba(0,123,255,0.05); color: #007bff; font-weight: bold; transition: 0.2s;}
-    .td-input:focus { box-shadow: 0 0 8px rgba(0,123,255,0.4); outline: none; background: #fff;}
+    .td-input { width: 100%; padding: 2px 4px; border: 1px solid #007bff; border-radius: 3px; text-align: center; background: rgba(0,123,255,0.05); color: #007bff; font-weight: bold; transition: 0.2s; height: 26px;}
+    .td-input:focus { box-shadow: 0 0 5px rgba(0,123,255,0.4); outline: none; background: #fff;}
+    .rtn-input { border-color: #e74c3c; color: #e74c3c; background: rgba(231,76,60,0.05); }
+    .rtn-input:focus { box-shadow: 0 0 5px rgba(231,76,60,0.4); background: #fff; }
     
     .action-bar { display: flex; justify-content: center; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);}
     .btn-action { padding: 10px 25px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px;}
@@ -41,7 +44,6 @@
     }
     .hist-badge:hover { transform: scale(1.1); background: #e67e22; box-shadow: 0 2px 4px rgba(230,126,34,0.4); }
 
-    /* Modal Design */
     .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;}
     .custom-modal-overlay.show { visibility: visible; opacity: 1; }
     .custom-modal-box { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color); transform: scale(0.9); transition: all 0.3s ease;}
@@ -84,22 +86,30 @@
     <div class="entry-card" id="tableSection" style="display: none;">
         <h3 style="font-size: 15px; color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #27ae60; padding-bottom: 5px;"><i class="fa-solid fa-boxes-packing" style="color:#27ae60;"></i> YARN RECEIVE DETAILS</h3>
         
-        <table>
+        <table id="yarnDetailsTable">
             <thead>
                 <tr>
-                    <th width="12%">COLOR</th>
-                    <th width="20%">YARN NAME</th>
-                    <th width="8%">ALLOW. (%)</th>
-                    <th width="15%">LOT NAME</th>
-                    <th width="10%">REQ. ALLOC. (Lbs)</th>
-                    <th width="10%">BEFORE RCV (Lbs)</th>
-                    <th width="10%">CURRENT RCV (Lbs)</th>
-                    <th width="10%">TOTAL RCV (Lbs)</th>
-                    <th width="5%">BALANCE (Lbs)</th>
+                    <th width="7%">COLOR</th>
+                    <th width="12%">YARN NAME</th>
+                    <th width="5%">ALLOW. (%)</th>
+                    <th width="8%">Yarn Required (Lbs)</th>
+                    <th width="8%">Yarn Allocated Balance</th>
+                    <th width="10%">LOT NAME</th>
+                    <th width="8%">Yarn allocated (Lbs)</th>
+                    <th width="8%">BEFORE RCV (Lbs)</th>
+                    <th width="8%">CURRENT RCV (Lbs)</th>
+                    <th width="8%" style="color:#e74c3c;">
+    CURRENT RETURN (Lbs) <br>
+    <button type="button" onclick="toggleAllLocks()" style="border:none; background:#e74c3c; color:white; border-radius:3px; padding:2px 8px; font-size:9px; cursor:pointer; margin-top:4px;" title="Unlock All Rows">
+        <i id="master_lock_icon" class="fa-solid fa-lock"></i> ALL
+    </button>
+</th>
+                    <th width="8%">TOTAL RCV (Lbs)</th>
+                    <th width="10%">Yarn Received Balance (Lbs)</th>
                 </tr>
             </thead>
             <tbody id="yarnTbody">
-                <tr><td colspan="9" style="color:#aaa; font-style:italic;">Search and select a job to see yarn details.</td></tr>
+                <tr><td colspan="12" style="color:#aaa; font-style:italic; padding: 20px;">Search and select a job to see yarn details.</td></tr>
             </tbody>
             <tfoot id="yarnTfoot"></tfoot>
         </table>
@@ -152,9 +162,8 @@
     let searchFocus = -1;
     let lotMapping = {}; 
     let groupedData = {}; 
-    window.currentOrderData = null; // Store fetched data globally for matrix calculation
+    window.currentOrderData = null;
     
-    // Variables for Knock Feature
     window.knockSysId = "";
     window.knockJobNo = "";
 
@@ -172,13 +181,22 @@
             else if (e.key === 'Enter') { e.preventDefault(); if (searchFocus > -1 && items) { items[searchFocus].dispatchEvent(new MouseEvent('mousedown')); return; } }
         }
 
-        // Vertical Enter Jump
+        // Vertical Enter Jump for Receive/Return inputs
         if(e.key === 'Enter') {
             if (e.target.classList.contains('rcv-input')) {
                 e.preventDefault(); 
                 let inputs = Array.from(document.querySelectorAll('.rcv-input'));
                 let idx = inputs.indexOf(e.target); 
                 if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                return;
+            }
+            if (e.target.classList.contains('rtn-input')) {
+                e.preventDefault(); 
+                // Only jump to UNLOCKED return inputs
+                let inputs = Array.from(document.querySelectorAll('.rtn-input:not([readonly])'));
+                let idx = inputs.indexOf(e.target); 
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                return;
             }
         }
     });
@@ -210,7 +228,7 @@
                     <span style="font-weight:bold; color:${badgeColor}; float:right;">[${job.status}]</span>`;
                     
                     div.onmousedown = function() { 
-                        document.getElementById('globalJobSearch').value = ''; // Auto Clear Search Box
+                        document.getElementById('globalJobSearch').value = ''; 
                         list.style.display = 'none'; 
                         loadYarnDetails(job.sys_id); 
                     };
@@ -229,7 +247,7 @@
         .then(res => {
             if(res.status === 'success') {
                 let d = res.data;
-                window.currentOrderData = d; // Store globally for matrix
+                window.currentOrderData = d; 
                 
                 document.getElementById('i_sys_id').value = d.system_id;
                 document.getElementById('m_job').value = d.job_no;
@@ -240,11 +258,9 @@
                 document.getElementById('m_orderQty').value = d.order_qty;
                 document.getElementById('m_planQty').value = d.plan_qty;
                 
-                // Show multiple pack types if different colors have different types
                 let packTypes = [...new Set(d.colors.map(c => c.pack_type))];
                 document.getElementById('m_packType').value = packTypes.join(', ');
                 
-                // Process and Flatten Data for Mapping
                 lotMapping = {};
                 let lotIndex = 0;
                 groupedData = {};
@@ -261,7 +277,9 @@
                                 color_name: c.color_name,
                                 yarn_name: y.yarn_name,
                                 allow_pct: y.allow_pct,
+                                req_lbs: y.req_lbs,  // Explicitly saving Yarn Required Lbs
                                 currRcv: '',
+                                currRtn: '',
                                 history_id: null,
                                 edit_old_val: 0
                             };
@@ -277,10 +295,8 @@
                 document.getElementById('allocSection').style.display = 'block';
                 document.getElementById('allocContainer').innerHTML = `<div style="color:#aaa; font-style:italic; font-size:12px; text-align:center; padding: 20px;">Enter received quantities and click "Generate Matrix" to calculate producible pieces.</div>`;
                 
-                // Set focus on first input
                 setTimeout(() => { let firstRcv = document.querySelector('.rcv-input'); if(firstRcv) firstRcv.focus(); }, 100);
             
-            // SMART LOCK POPUP LOGIC
             } else if (res.status === 'unapproved') {
                 window.knockSysId = res.sys_id;
                 window.knockJobNo = res.job_no;
@@ -294,7 +310,6 @@
 
     function knockApprover() {
         if(!window.knockSysId) return;
-        
         fetch("{% url 'send_approval_knock_ajax' %}", {
             method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
             body: JSON.stringify({ sys_id: window.knockSysId, job_no: window.knockJobNo })
@@ -302,7 +317,6 @@
             if(data.status === 'success') {
                 document.getElementById('unapproved-modal').classList.remove('show');
                 showModal(data.message, "success");
-                if (typeof fetchNotifications === 'function') fetchNotifications();
             } else {
                 showModal("Error: " + data.message);
             }
@@ -311,19 +325,20 @@
 
     function renderYarnTable() {
         let tbody = '';
-        let grandReq = 0, grandBefore = 0, grandCurr = 0, grandTotal = 0, grandBal = 0;
+        let grandReq = 0, grandAlloc = 0, grandBefore = 0, grandCurr = 0, grandRtn = 0, grandTotal = 0, grandRcvBal = 0;
         let hasHistory = false;
         
         let colorCounts = {};
         let colorRendered = {};
         
-        // Count total rows per color for COLOR Rowspan
         Object.keys(lotMapping).forEach(idx => {
             let cName = lotMapping[idx].color_name;
             colorCounts[cName] = (colorCounts[cName] || 0) + 1;
         });
 
-        // Render Main Input Table with Rowspan
+        // Track printed yarns for deduping Grand Required Lbs
+        let renderedYarns = new Set();
+
         Object.keys(groupedData).forEach(key => {
             let lotsArray = groupedData[key];
             let rowCount = lotsArray.length;
@@ -331,16 +346,25 @@
             lotsArray.forEach((lot, i) => {
                 let before = parseFloat(lot.before_rcv) || 0;
                 let active_current = parseFloat(lot.currRcv) || 0;
-                let old_val = parseFloat(lot.edit_old_val) || 0;
+                let active_return = parseFloat(lot.currRtn) || 0;
+                let old_val = parseFloat(lot.edit_old_val) || 0; // old_val can be positive (rcv) or negative (rtn)
                 
-                let dynamic_total = before - old_val + active_current;
-                let balance = dynamic_total - parseFloat(lot.lot_alloc_lbs); // RCV - REQ Formula
+                let dynamic_total = before - old_val + (active_current - active_return);
+                let balance = dynamic_total - parseFloat(lot.lot_alloc_lbs);
 
-                grandReq += parseFloat(lot.lot_alloc_lbs);
+                if (!renderedYarns.has(key)) {
+                    grandReq += parseFloat(lot.req_lbs) || 0;
+                    renderedYarns.add(key);
+                }
+
+                grandAlloc += parseFloat(lot.lot_alloc_lbs);
                 grandTotal += dynamic_total;
-                grandBal += balance;
+                grandRcvBal += balance;
                 grandCurr += active_current; 
-                if (!lot.history_id) grandBefore += before; else grandBefore += (before - old_val);
+                grandRtn += active_return;
+                
+                if (!lot.history_id) grandBefore += before; 
+                else grandBefore += (before - old_val);
 
                 let balColor = balance < 0 ? '#e74c3c' : (balance > 0 ? '#27ae60' : '#000');
                 let balBg = balance > 0 ? '#fff3cd' : 'transparent';
@@ -348,23 +372,45 @@
 
                 tbody += `<tr style="background: ${lot.history_id ? '#fff9e6' : '#fff'};">`;
                 
-                // Smart COLOR Rowspan
+                // Color Rowspan
                 if (!colorRendered[lot.color_name]) {
                     tbody += `<td rowspan="${colorCounts[lot.color_name]}" style="font-weight:bold; color:#007bff; vertical-align:middle;">${lot.color_name}</td>`;
                     colorRendered[lot.color_name] = true;
                 }
-                // Smart YARN Rowspan
+                
+                // Yarn Rowspan
                 if(i === 0) {
                     tbody += `<td rowspan="${rowCount}" style="vertical-align:middle; font-weight:500;">${lot.yarn_name}</td>`;
                     tbody += `<td rowspan="${rowCount}" style="vertical-align:middle;">${lot.allow_pct}%</td>`;
+                    
+                    let yReq = parseFloat(lot.req_lbs) || 0;
+                    let yAllocTot = lotsArray.reduce((s, l) => s + parseFloat(l.lot_alloc_lbs), 0);
+                    let yAllocBal = yAllocTot - yReq;
+                    
+                    let aBalColor = yAllocBal < 0 ? '#e74c3c' : (yAllocBal > 0 ? '#27ae60' : '#000');
+                    let aBalText = yAllocBal > 0 ? `+${yAllocBal}` : yAllocBal;
+                    
+                    tbody += `<td rowspan="${rowCount}" style="vertical-align:middle; font-weight:bold; color:#8e44ad;">${yReq}</td>`;
+                    tbody += `<td rowspan="${rowCount}" style="vertical-align:middle; font-weight:bold; color:${aBalColor};">${aBalText}</td>`;
                 }
                 
+                let isEditReturn = lot.history_id && lot.edit_old_val < 0;
+                let rtnReadonly = isEditReturn ? '' : 'readonly';
+                let rtnBg = isEditReturn ? '#fdfae2' : 'rgba(0,0,0,0.04)';
+                let rtnBorder = isEditReturn ? 'border-color:#e67e22;' : 'border-color:#ccc;';
+                let rtnIcon = isEditReturn ? 'fa-unlock' : 'fa-lock';
+                let rtnIconCol = isEditReturn ? '#e74c3c' : '#7f8c8d';
+
                 tbody += `
-                    <td><span style="background:#8e44ad; color:white; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold;">${lot.lot_name}</span></td>
+                    <td><span style="background:#8e44ad; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">${lot.lot_name}</span></td>
                     <td style="font-weight:bold;">${lot.lot_alloc_lbs}</td>
                     <td style="color:#7f8c8d; font-weight:bold;">${before}</td>
+                    <td><input type="text" autocomplete="off" class="td-input rcv-input" style="${lot.history_id && lot.edit_old_val > 0 ? 'border-color:#e67e22; background:#fdfae2;' : ''}" value="${lot.currRcv}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateRowRcv(${lot.idx}, 'rcv', this.value)"></td>
                     <td>
-                        <input type="text" autocomplete="off" class="td-input rcv-input" style="${lot.history_id ? 'border-color:#e67e22; background:#fdfae2;' : ''}" value="${lot.currRcv}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateRowRcv(${lot.idx}, this.value)">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <input type="text" id="rtn_inp_${lot.idx}" autocomplete="off" class="td-input rtn-input" style="background:${rtnBg}; ${rtnBorder} width:70%;" value="${lot.currRtn}" placeholder="0" ${rtnReadonly} oninput="this.value=this.value.replace(/[^0-9.]/g,''); updateRowRcv(${lot.idx}, 'rtn', this.value)">
+                            <button title="Unlock Return" style="border:none; background:transparent; cursor:pointer; color:${rtnIconCol}; font-size:12px; padding:2px;" onclick="toggleLock(${lot.idx})"><i id="lock_icon_${lot.idx}" class="fa-solid ${rtnIcon}"></i></button>
+                        </div>
                     </td>
                     <td id="tot_${lot.idx}" style="font-weight:bold; color:#27ae60;">${dynamic_total}</td>
                     <td id="bal_${lot.idx}" style="font-weight:bold; color:${balColor}; background:${balBg};">${balText}</td>
@@ -374,16 +420,23 @@
             });
         });
 
-        document.getElementById('yarnTbody').innerHTML = tbody || '<tr><td colspan="9" style="color:#e74c3c; font-style:italic; font-weight:bold;">No yarn data found for this order. Please add yarn in Order Entry page first.</td></tr>';
+        document.getElementById('yarnTbody').innerHTML = tbody || '<tr><td colspan="12" style="color:#e74c3c; font-style:italic; font-weight:bold; padding:20px;">No yarn data found for this order. Please add yarn in Order Entry page first.</td></tr>';
         
+        let gAllocBal = grandAlloc - grandReq;
+        let gABalColor = gAllocBal < 0 ? '#e74c3c' : (gAllocBal > 0 ? '#27ae60' : '#2c3e50');
+
         document.getElementById('yarnTfoot').innerHTML = `
             <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid var(--border-color);">
-                <td colspan="4" style="text-align:right;">YARN GRAND TOTAL:</td>
-                <td style="color:#2c3e50; font-size:14px;">${grandReq}</td>
+                <td colspan="3" style="text-align:right;">YARN GRAND TOTAL:</td>
+                <td style="color:#8e44ad; font-size:14px;">${grandReq}</td>
+                <td style="color:${gABalColor}; font-size:14px;">${gAllocBal > 0 ? '+'+gAllocBal : gAllocBal}</td>
+                <td></td>
+                <td style="color:#2c3e50; font-size:14px;">${grandAlloc}</td>
                 <td style="color:#7f8c8d;">${grandBefore}</td>
                 <td id="grandCurr" style="color:#007bff; font-size:14px;">${grandCurr}</td>
+                <td id="grandRtn" style="color:#e74c3c; font-size:14px;">${grandRtn}</td>
                 <td id="grandTot" style="color:#27ae60; font-size:14px;">${grandTotal}</td>
-                <td id="grandBal" style="color:${grandBal < 0 ? '#e74c3c' : (grandBal > 0 ? '#27ae60' : '#2c3e50')}; font-size:14px; background:${grandBal > 0 ? '#fff3cd' : 'transparent'};">${grandBal > 0 ? '+'+grandBal : grandBal}</td>
+                <td id="grandBal" style="color:${grandRcvBal < 0 ? '#e74c3c' : (grandRcvBal > 0 ? '#27ae60' : '#2c3e50')}; font-size:14px; background:${grandRcvBal > 0 ? '#fff3cd' : 'transparent'};">${grandRcvBal > 0 ? '+'+grandRcvBal : grandRcvBal}</td>
             </tr>
         `;
 
@@ -396,11 +449,9 @@
                 groupedData[key].forEach(lot => {
                     orderedLots.push(lot);
                     lot.history.forEach(h => {
-                        if(!dateMap.has(h.date)) {
-                            dateMap.set(h.date, { date: h.date, user: h.user, lots: {}, maxId: h.id });
-                        } else {
-                            if(h.id > dateMap.get(h.date).maxId) dateMap.get(h.date).maxId = h.id;
-                        }
+                        if(!dateMap.has(h.date)) dateMap.set(h.date, { date: h.date, user: h.user, lots: {}, maxId: h.id });
+                        else if(h.id > dateMap.get(h.date).maxId) dateMap.get(h.date).maxId = h.id;
+                        
                         dateMap.get(h.date).lots[lot.idx] = { id: h.id, lbs: h.lbs };
                     });
                 });
@@ -414,7 +465,7 @@
 
             orderedLots.forEach((lot, i) => {
                 if (lot.color_name !== lastColor) {
-                    if (lastColor !== null) colorThs += `<th colspan="${colorColspan}" style="padding: 8px; border: 1px solid var(--border-color); text-align: center; color:#007bff;">${lastColor}</th>`;
+                    if (lastColor !== null) colorThs += `<th colspan="${colorColspan}" style="padding: 6px; text-align: center; color:#007bff;">${lastColor}</th>`;
                     lastColor = lot.color_name;
                     colorColspan = 1;
                 } else colorColspan++;
@@ -423,29 +474,29 @@
                 if (yarnKey !== lastYarn) {
                     if (lastYarn !== null) {
                         let yName = lastYarn.split('_')[1];
-                        yarnThs += `<th colspan="${yarnColspan}" style="padding: 6px; border: 1px solid var(--border-color); text-align: center; color:#333; font-weight:500;">${yName}</th>`;
+                        yarnThs += `<th colspan="${yarnColspan}" style="padding: 6px; text-align: center; color:#333; font-weight:500;">${yName}</th>`;
                     }
                     lastYarn = yarnKey;
                     yarnColspan = 1;
                 } else yarnColspan++;
                 
-                lotThs += `<th style="padding: 6px; border: 1px solid var(--border-color); text-align: center; min-width: 100px; width: 100px;"><span style="background:#8e44ad; color:white; padding:1px 5px; border-radius:3px; font-size:10px;">Lot: ${lot.lot_name}</span></th>`;
+                lotThs += `<th style="padding: 4px; text-align: center; min-width: 80px; width: 80px;"><span style="background:#8e44ad; color:white; padding:1px 4px; border-radius:3px; font-size:9px;">Lot: ${lot.lot_name}</span></th>`;
                 
                 if (i === orderedLots.length - 1) {
-                    colorThs += `<th colspan="${colorColspan}" style="padding: 8px; border: 1px solid var(--border-color); text-align: center; color:#007bff;">${lastColor}</th>`;
+                    colorThs += `<th colspan="${colorColspan}" style="padding: 6px; text-align: center; color:#007bff;">${lastColor}</th>`;
                     let yName = lastYarn.split('_')[1];
-                    yarnThs += `<th colspan="${yarnColspan}" style="padding: 6px; border: 1px solid var(--border-color); text-align: center; color:#333; font-weight:500;">${yName}</th>`;
+                    yarnThs += `<th colspan="${yarnColspan}" style="padding: 6px; text-align: center; color:#333; font-weight:500;">${yName}</th>`;
                 }
             });
             
             let histHtml = `<div style="overflow-x: auto; padding-bottom: 10px;">
-                <table style="width:100%; border-collapse: collapse; font-size: 12px; white-space: nowrap;">
+                <table style="width:100%; border-collapse: collapse; font-size: 11px; white-space: nowrap;">
                     <thead>
                         <tr style="background: rgba(142,68,173,0.05); border-top: 2px solid #8e44ad;">
-                            <th rowspan="3" style="padding: 10px; border: 1px solid var(--border-color); width: 40px; text-align: center;">#</th>
-                            <th rowspan="3" style="padding: 10px; border: 1px solid var(--border-color); text-align: left; width: 180px;">RECEIVED DATE & BY</th>
+                            <th rowspan="3" style="width: 30px;">#</th>
+                            <th rowspan="3" style="text-align: left; width: 160px;">RECEIVED DATE & BY</th>
                             ${colorThs}
-                            <th rowspan="3" style="padding: 10px; border: 1px solid var(--border-color); text-align: right; background: rgba(0,0,0,0.05); width: 110px;">ROW TOTAL</th>
+                            <th rowspan="3" style="text-align: right; background: rgba(0,0,0,0.05); width: 90px;">ROW NET</th>
                         </tr>
                         <tr style="background: rgba(142,68,173,0.05);">
                             ${yarnThs}
@@ -463,12 +514,10 @@
             historyList.forEach(group => {
                 let rowTotal = 0;
                 histHtml += `<tr style="transition:0.2s;">
-                    <td style="border: 1px solid var(--border-color); text-align: center;">
-                        <span class="hist-badge" onclick="editHistoryRow('${group.date}')" title="Click to Edit this transaction">${seq}</span>
-                    </td>
-                    <td style="border: 1px solid var(--border-color); text-align: left;">
-                        <div style="font-weight: bold; color:#27ae60; margin-bottom: 3px;"><i class="fa-solid fa-calendar-check"></i> ${group.date}</div>
-                        <div style="font-size: 10px; color:#555;"><i class="fa-solid fa-user-pen"></i> By: ${group.user}</div>
+                    <td style="text-align: center;"><span class="hist-badge" onclick="editHistoryRow('${group.date}')" title="Edit">${seq}</span></td>
+                    <td style="text-align: left;">
+                        <div style="font-weight: bold; color:#27ae60; margin-bottom: 2px;"><i class="fa-solid fa-calendar-check"></i> ${group.date}</div>
+                        <div style="font-size: 9px; color:#555;"><i class="fa-solid fa-user-pen"></i> By: ${group.user}</div>
                     </td>`;
                     
                 orderedLots.forEach(lot => {
@@ -476,32 +525,82 @@
                         let lbs = group.lots[lot.idx].lbs;
                         rowTotal += lbs;
                         colTotals[lot.idx] += lbs;
-                        histHtml += `<td style="border: 1px solid var(--border-color); text-align: center; font-weight:bold; color:#27ae60; background:rgba(39,174,96,0.04);">${lbs}</td>`;
+                        let textHtml = lbs < 0 ? `<span style="color:#e74c3c;">${lbs}</span>` : `<span style="color:#27ae60;">${lbs}</span>`;
+                        histHtml += `<td style="text-align: center; font-weight:bold; background:rgba(39,174,96,0.04);">${textHtml}</td>`;
                     } else {
-                        histHtml += `<td style="border: 1px solid var(--border-color); text-align: center; color:#ccc;">-</td>`;
+                        histHtml += `<td style="text-align: center; color:#ccc;">-</td>`;
                     }
                 });
                 
-                histHtml += `<td style="border: 1px solid var(--border-color); text-align: right; font-weight:bold; background: rgba(0,0,0,0.02); color:#2c3e50;">${rowTotal} Lbs</td>
+                let rTotCol = rowTotal < 0 ? '#e74c3c' : '#2c3e50';
+                histHtml += `<td style="text-align: right; font-weight:bold; background: rgba(0,0,0,0.02); color:${rTotCol};">${rowTotal}</td>
                 </tr>`;
                 seq--;
             });
             
-            histHtml += `</tbody>
-                <tfoot>
-                    <tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid #ccc;">
-                        <td colspan="2" style="border: 1px solid var(--border-color); text-align: right; color:#2c3e50;">COLUMN TOTAL:</td>`;
+            // --- HISTORY FOOTER ROWS ---
+            histHtml += `</tbody><tfoot>`;
             
+            // 1. Column Total (History Received)
+            histHtml += `<tr style="background: rgba(0,0,0,0.05); font-weight: bold; border-top: 2px solid #ccc;">
+                        <td colspan="2" style="text-align: right; color:#2c3e50;">COLUMN TOTAL (Rcvd):</td>`;
             let grandHistTotal = 0;
             orderedLots.forEach(lot => {
                 grandHistTotal += colTotals[lot.idx];
-                histHtml += `<td style="border: 1px solid var(--border-color); text-align: center; color:#007bff; font-size:13px;">${colTotals[lot.idx]}</td>`;
+                histHtml += `<td style="text-align: center; color:#007bff; font-size:12px;">${colTotals[lot.idx]}</td>`;
             });
-            
-            histHtml += `<td style="border: 1px solid var(--border-color); text-align: right; color:#e74c3c; font-size: 14px;">${grandHistTotal} Lbs</td>
-                    </tr>
-                </tfoot></table></div>`;
-                
+            histHtml += `<td style="text-align: right; color:#007bff; font-size: 13px;">${grandHistTotal}</td></tr>`;
+
+            // 2. Yarn Required (Lbs)
+            histHtml += `<tr style="background: rgba(0,0,0,0.02); font-weight: bold;">
+                        <td colspan="2" style="text-align: right; color:#2c3e50;">Yarn Required (Lbs):</td>`;
+            let reqDeduplicated = 0; let ySet = new Set();
+            orderedLots.forEach(lot => {
+                histHtml += `<td style="text-align: center; color:#8e44ad;">${lot.req_lbs}</td>`;
+                if(!ySet.has(lot.color_name + '_' + lot.yarn_name)) { reqDeduplicated += parseFloat(lot.req_lbs); ySet.add(lot.color_name + '_' + lot.yarn_name); }
+            });
+            histHtml += `<td style="text-align: right; color:#8e44ad;">${reqDeduplicated}</td></tr>`;
+
+            // 3. Yarn Allocated (Lbs)
+            histHtml += `<tr style="background: rgba(0,0,0,0.03); font-weight: bold;">
+                        <td colspan="2" style="text-align: right; color:#2c3e50;">Yarn allocated (Lbs):</td>`;
+            let gAllocHist = 0;
+            orderedLots.forEach(lot => {
+                histHtml += `<td style="text-align: center;">${lot.lot_alloc_lbs}</td>`;
+                gAllocHist += parseFloat(lot.lot_alloc_lbs);
+            });
+            histHtml += `<td style="text-align: right;">${gAllocHist}</td></tr>`;
+
+            // 4. Yarn Allocated Balance
+            histHtml += `<tr style="background: rgba(0,0,0,0.04); font-weight: bold;">
+                        <td colspan="2" style="text-align: right; color:#2c3e50;">Yarn Allocated balance:</td>`;
+            let gAllocBalHist = gAllocHist - reqDeduplicated;
+            orderedLots.forEach(lot => {
+                let parentYarnLots = orderedLots.filter(l => l.yarn_name === lot.yarn_name && l.color_name === lot.color_name);
+                let yTotAlloc = parentYarnLots.reduce((s, l) => s + parseFloat(l.lot_alloc_lbs), 0);
+                let yBal = yTotAlloc - parseFloat(lot.req_lbs);
+                let color = yBal < 0 ? '#e74c3c' : (yBal > 0 ? '#27ae60' : '#000');
+                let text = yBal > 0 ? `+${yBal}` : yBal;
+                histHtml += `<td style="text-align: center; color:${color};">${text}</td>`;
+            });
+            let gABalColor = gAllocBalHist < 0 ? '#e74c3c' : (gAllocBalHist > 0 ? '#27ae60' : '#000');
+            histHtml += `<td style="text-align: right; color:${gABalColor};">${gAllocBalHist > 0 ? '+'+gAllocBalHist : gAllocBalHist}</td></tr>`;
+
+            // 5. Yarn Received Balance
+            histHtml += `<tr style="background: rgba(0,0,0,0.05); font-weight: bold;">
+                        <td colspan="2" style="text-align: right; color:#2c3e50;">Yarn Received Balance (Lbs):</td>`;
+            let gRcvBalHist = 0;
+            orderedLots.forEach(lot => {
+                let rcvBal = colTotals[lot.idx] - parseFloat(lot.lot_alloc_lbs);
+                gRcvBalHist += rcvBal;
+                let color = rcvBal < 0 ? '#e74c3c' : (rcvBal > 0 ? '#27ae60' : '#000');
+                let text = rcvBal > 0 ? `+${rcvBal}` : rcvBal;
+                histHtml += `<td style="text-align: center; color:${color};">${text}</td>`;
+            });
+            let gRBalColor = gRcvBalHist < 0 ? '#e74c3c' : (gRcvBalHist > 0 ? '#27ae60' : '#000');
+            histHtml += `<td style="text-align: right; color:${gRBalColor};">${gRcvBalHist > 0 ? '+'+gRcvBalHist : gRcvBalHist}</td></tr>`;
+
+            histHtml += `</tfoot></table></div>`;
             document.getElementById('historyContainer').innerHTML = histHtml;
             document.getElementById('historyPanel').style.display = 'block';
         } else {
@@ -522,7 +621,6 @@
             
             if(mains.length === 0 || c.sizes.length === 0) return;
 
-            // BOTTLENECK CALCULATION: Total possible percentage based on received vs required
             let minPct = 1.0;
             let hasZeroRcv = false;
             c.yarns.forEach(y => {
@@ -534,8 +632,9 @@
                         if(mapLot) {
                             let before = parseFloat(mapLot.before_rcv) || 0;
                             let curr = parseFloat(mapLot.currRcv) || 0;
+                            let rtn = parseFloat(mapLot.currRtn) || 0;
                             let old_val = parseFloat(mapLot.edit_old_val) || 0;
-                            totalRcv += (before - old_val + curr);
+                            totalRcv += (before - old_val + (curr - rtn));
                         }
                     });
                     if(totalRcv <= 0) hasZeroRcv = true;
@@ -544,16 +643,13 @@
                 }
             });
             
-            // If any yarn has 0 received, 0 pieces can be made
             if(hasZeroRcv) minPct = 0;
-            // Cap at 100% plan qty
             if(minPct > 1.0) minPct = 1.0;
 
             let sizePairs = {}; 
             c.sizes.forEach(sz => sizePairs[sz.id] = []);
 
             if (c.pack_type === 'Solid Size') {
-                // SOLID SIZE LOGIC based on RECEIVED LBS
                 let totalColorPcs = c.sizes.reduce((sum, sz) => sum + Math.floor(sz.pQty * minPct), 0);
                 
                 mains.forEach(my => {
@@ -561,7 +657,7 @@
                     let myLotsRcv = my.lots.map(ml => {
                         let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(ml.id));
                         let rcv = 0;
-                        if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                        if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + ((parseFloat(mapLot.currRcv)||0) - (parseFloat(mapLot.currRtn)||0));
                         myTotalRcvLbs += rcv;
                         return { lot: ml, rcv: rcv };
                     });
@@ -582,7 +678,7 @@
                             let syLotsRcv = sy.lots.map(sl => {
                                 let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(sl.id));
                                 let rcv = 0;
-                                if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                                if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + ((parseFloat(mapLot.currRcv)||0) - (parseFloat(mapLot.currRtn)||0));
                                 syTotalRcvLbs += rcv;
                                 return { lot: sl, rcv: rcv };
                             });
@@ -615,7 +711,6 @@
                             if (take > 0) {
                                 sizePairs[sz.id].push({ mainYarn: my, mLot: mItem.lot, sLot: sItem.lot, sYarnName: sItem.yName, pcs: take });
                             }
-                            
                             remainingPcsForSize -= take;
                             mItem.pcs -= take;
                             sItem.pcs -= take;
@@ -627,7 +722,6 @@
                 });
 
             } else {
-                // ASSORT SIZE LOGIC based on RECEIVED LBS
                 c.sizes.forEach(sz => {
                     let achievable_qty = Math.floor(sz.pQty * minPct);
                     
@@ -636,7 +730,7 @@
                         let myLotsRcv = my.lots.map(ml => {
                             let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(ml.id));
                             let rcv = 0;
-                            if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                            if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + ((parseFloat(mapLot.currRcv)||0) - (parseFloat(mapLot.currRtn)||0));
                             myTotalRcvLbs += rcv;
                             return { lot: ml, rcv: rcv };
                         });
@@ -657,7 +751,7 @@
                                 let syLotsRcv = sy.lots.map(sl => {
                                     let mapLot = Object.values(lotMapping).find(l => String(l.id) === String(sl.id));
                                     let rcv = 0;
-                                    if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + (parseFloat(mapLot.currRcv)||0);
+                                    if(mapLot) rcv = (parseFloat(mapLot.before_rcv)||0) - (parseFloat(mapLot.edit_old_val)||0) + ((parseFloat(mapLot.currRcv)||0) - (parseFloat(mapLot.currRtn)||0));
                                     syTotalRcvLbs += rcv;
                                     return { lot: sl, rcv: rcv };
                                 });
@@ -668,7 +762,6 @@
                                 });
                                 let sSum = sLotsPcs.reduce((acc, curr) => acc + curr.pcs, 0);
                                 if(sLotsPcs.length > 0) sLotsPcs[sLotsPcs.length - 1].pcs = achievable_qty - sSum;
-                                
                                 sLotsPcsList.push(sLotsPcs);
                             });
                         } else {
@@ -702,9 +795,9 @@
                 <thead>
                     <tr style="background: rgba(243,156,18,0.1); border-bottom: 2px solid #f39c12;">
                         <th style="padding: 10px; width:2.5%;">Color</th>
-                        <th style="padding: 10px; width:9%;">Main Yarn Name</th>
-                        <th style="padding: 10px; width:6%;">MAIN YARN LOT</th>
-                        <th style="padding: 10px; width:13%;">SUPPORT YARN Name LOT</th>`;
+                        <th style="padding: 10px; width:8%;">Main Yarn Name</th>
+                        <th style="padding: 10px; width:6%;">Main Yarn Lot</th>
+                        <th style="padding: 10px; width:15%;">Support Yarn Name Lot</th>`;
             
             c.sizes.forEach(s => {
                 html += `<th style="padding: 10px;">
@@ -793,7 +886,6 @@
 
             let numMainYarns = mains.length > 0 ? mains.length : 1;
 
-            // Row 1: Knitting Production Possible
             html += `</tbody><tfoot>
                 <tr style="background: rgba(0,0,0,0.02); font-weight: bold; border-top: 2px solid #ccc;">
                     <td colspan="4" style="text-align:right; padding:10px;">Knitting Production Possible (Pcs):</td>`;
@@ -809,7 +901,6 @@
             });
             html += `<td style="color:#2c3e50; font-size:14px; text-align:center;">${dividedGrandTot}</td></tr>`;
 
-            // Row 2: Plan QTY
             html += `<tr style="background: rgba(0,0,0,0.04); font-weight: bold;">
                     <td colspan="4" style="text-align:right; padding:10px;">Plan QTY (Pcs):</td>`;
             let planGrandTot = 0;
@@ -819,7 +910,6 @@
             });
             html += `<td style="color:#333; font-size:14px; text-align:center;">${planGrandTot}</td></tr>`;
 
-            // Row 3: Balance Qty
             html += `<tr style="background: rgba(0,0,0,0.06); font-weight: bold;">
                     <td colspan="4" style="text-align:right; padding:10px;">Balance Qty (Pcs):</td>`;
             let balGrandTot = 0;
@@ -857,34 +947,135 @@
             lotMapping[idx].history_id = null;
             lotMapping[idx].edit_old_val = 0;
             lotMapping[idx].currRcv = '';
+            lotMapping[idx].currRtn = '';
         });
 
         Object.keys(group.lots).forEach(idx => {
             lotMapping[idx].history_id = group.lots[idx].id;
             lotMapping[idx].edit_old_val = group.lots[idx].lbs;
-            lotMapping[idx].currRcv = group.lots[idx].lbs;
+            if (group.lots[idx].lbs < 0) {
+                lotMapping[idx].currRtn = Math.abs(group.lots[idx].lbs);
+            } else {
+                lotMapping[idx].currRcv = group.lots[idx].lbs;
+            }
         });
 
         renderYarnTable(); 
         showModal("Edit Mode Active: You are editing the transaction from " + dateKey, "success");
         
         setTimeout(() => {
-            let firstInput = document.querySelector('.rcv-input[style*="border-color:#e67e22"]');
+            let firstInput = document.querySelector('.rcv-input[style*="border-color:#e67e22"], .rtn-input[style*="border-color:#e67e22"]');
             if(firstInput) { firstInput.focus(); firstInput.select(); }
         }, 100);
     }
 
-    function updateRowRcv(idx, val) {
-        lotMapping[idx].currRcv = val;
-        let lot = lotMapping[idx];
+    function toggleLock(idx) {
+        let inp = document.getElementById(`rtn_inp_${idx}`);
+        let icon = document.getElementById(`lock_icon_${idx}`);
+        if(inp.hasAttribute('readonly')) {
+            inp.removeAttribute('readonly');
+            inp.style.background = '#fff';
+            inp.style.borderColor = '#e74c3c';
+            icon.classList.remove('fa-lock');
+            icon.classList.add('fa-unlock');
+            icon.style.color = '#e74c3c';
+            inp.focus();
+        } else {
+            inp.setAttribute('readonly', 'readonly');
+            inp.style.background = 'rgba(0,0,0,0.04)';
+            inp.style.borderColor = '#ccc';
+            icon.classList.remove('fa-unlock');
+            icon.classList.add('fa-lock');
+            icon.style.color = '#7f8c8d';
+            
+            // Auto clear if locked without saving (unless it's from history edit)
+            if(!lotMapping[idx].history_id || lotMapping[idx].edit_old_val >= 0) {
+                inp.value = '';
+                updateRowRcv(idx, 'rtn', '');
+            }
+        }
+    }
+    function toggleAllLocks() {
+        let masterIcon = document.getElementById('master_lock_icon');
+        if(!masterIcon) return;
         
+        let isLocked = masterIcon.classList.contains('fa-lock');
+        
+        if (isLocked) {
+            masterIcon.classList.remove('fa-lock');
+            masterIcon.classList.add('fa-unlock');
+        } else {
+            masterIcon.classList.remove('fa-unlock');
+            masterIcon.classList.add('fa-lock');
+        }
+
+        Object.keys(lotMapping).forEach(idx => {
+            let inp = document.getElementById(`rtn_inp_${idx}`);
+            let icon = document.getElementById(`lock_icon_${idx}`);
+            if (!inp) return;
+
+            if (isLocked) {
+                // Unlock All
+                if(inp.hasAttribute('readonly')) {
+                    inp.removeAttribute('readonly');
+                    inp.style.background = '#fff';
+                    inp.style.borderColor = '#e74c3c';
+                    if(icon) {
+                        icon.classList.remove('fa-lock');
+                        icon.classList.add('fa-unlock');
+                        icon.style.color = '#e74c3c';
+                    }
+                }
+            } else {
+                // Lock All
+                if(!inp.hasAttribute('readonly')) {
+                    inp.setAttribute('readonly', 'readonly');
+                    inp.style.background = 'rgba(0,0,0,0.04)';
+                    inp.style.borderColor = '#ccc';
+                    if(icon) {
+                        icon.classList.remove('fa-unlock');
+                        icon.classList.add('fa-lock');
+                        icon.style.color = '#7f8c8d';
+                    }
+                    
+                    // Auto clear if locked without saving (unless it's from history edit)
+                    if(!lotMapping[idx].history_id || lotMapping[idx].edit_old_val >= 0) {
+                        inp.value = '';
+                        updateRowRcv(idx, 'rtn', '');
+                    }
+                }
+            }
+        });
+        
+        // Focus on the first unlocked return input
+        if (isLocked) {
+            let firstRtnInp = document.querySelector('.rtn-input:not([readonly])');
+            if(firstRtnInp) firstRtnInp.focus();
+        }
+    }
+
+    function updateRowRcv(idx, type, val) {
+        if (type === 'rcv') lotMapping[idx].currRcv = val;
+        if (type === 'rtn') lotMapping[idx].currRtn = val;
+        
+        let lot = lotMapping[idx];
         let before = parseFloat(lot.before_rcv) || 0;
-        let current = parseFloat(val) || 0;
-        let req = parseFloat(lot.lot_alloc_lbs) || 0;
+        let rcv = parseFloat(lot.currRcv) || 0;
+        let rtn = parseFloat(lot.currRtn) || 0;
         let old_val = parseFloat(lot.edit_old_val) || 0;
         
-        let total = before - old_val + current;
-        let bal = total - req; 
+        // --- SMART VALIDATION: Prevent returning more than available stock ---
+        let max_returnable = before - old_val + rcv;
+        if (type === 'rtn' && rtn > max_returnable) {
+            showModal(`Logic Error!\n\nYou cannot return more than the available stock.\nMaximum Returnable for this lot is: ${max_returnable} Lbs.`);
+            lot.currRtn = '';
+            rtn = 0;
+            let rtnInp = document.getElementById(`rtn_inp_${idx}`);
+            if(rtnInp) rtnInp.value = '';
+        }
+        
+        let total = before - old_val + (rcv - rtn);
+        let bal = total - parseFloat(lot.lot_alloc_lbs); 
         
         let totTd = document.getElementById(`tot_${idx}`);
         let balTd = document.getElementById(`bal_${idx}`);
@@ -900,23 +1091,31 @@
     }
 
     function updateGrandTotals() {
-        let gReq = 0, gCurr = 0, gTot = 0, gBal = 0;
+        let gReq = 0, gAlloc = 0, gCurr = 0, gRtn = 0, gTot = 0, gBal = 0;
+        let reqSet = new Set();
         
         Object.keys(lotMapping).forEach(idx => {
             let lot = lotMapping[idx];
             let before = parseFloat(lot.before_rcv) || 0;
-            let current = parseFloat(lot.currRcv) || 0;
+            let rcv = parseFloat(lot.currRcv) || 0;
+            let rtn = parseFloat(lot.currRtn) || 0;
             let old_val = parseFloat(lot.edit_old_val) || 0;
-            let dynamic_total = before - old_val + current;
+            let dynamic_total = before - old_val + (rcv - rtn);
             
-            gReq += parseFloat(lot.lot_alloc_lbs) || 0;
-            gCurr += current;
+            if(!reqSet.has(lot.color_name + '_' + lot.yarn_name)) {
+                gReq += parseFloat(lot.req_lbs) || 0;
+                reqSet.add(lot.color_name + '_' + lot.yarn_name);
+            }
+            gAlloc += parseFloat(lot.lot_alloc_lbs) || 0;
+            gCurr += rcv;
+            gRtn += rtn;
             gTot += dynamic_total;
         });
         
-        gBal = gTot - gReq;
+        gBal = gTot - gAlloc;
 
         document.getElementById('grandCurr').innerText = gCurr;
+        document.getElementById('grandRtn').innerText = gRtn;
         document.getElementById('grandTot').innerText = gTot;
         
         let gBalEl = document.getElementById('grandBal');
@@ -932,7 +1131,11 @@
         let payloadLots = [];
         Object.keys(lotMapping).forEach(idx => {
             let lot = lotMapping[idx];
-            if (lot.currRcv !== '') {
+            let rcv = parseFloat(lot.currRcv) || 0;
+            let rtn = parseFloat(lot.currRtn) || 0;
+            let net_current = rcv - rtn;
+            
+            if (lot.currRcv !== '' || lot.currRtn !== '') {
                 payloadLots.push({
                     color: lot.color_name,
                     yarn_name: lot.yarn_name,
@@ -940,14 +1143,14 @@
                     lot_name: lot.lot_name,
                     lot_alloc_lbs: lot.lot_alloc_lbs,
                     record_id: lot.record_id,
-                    history_id: lot.history_id, // Identifies Edit Mode
-                    current_rcv: lot.currRcv
+                    history_id: lot.history_id, 
+                    current_rcv: net_current
                 });
             }
         });
 
         if (payloadLots.length === 0) {
-            showModal("Please enter at least some received quantity before saving.");
+            showModal("Please enter at least some received or returned quantity before saving.");
             return;
         }
 

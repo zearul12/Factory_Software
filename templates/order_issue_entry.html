@@ -272,6 +272,8 @@
     let jobFocus = -1, tcFocus = -1, opFocus = -1;
     window.jobMatrix = [];
     window.jobIssues = [];
+    window.allocRules = []; // ম্যাট্রিক্স রুলস সেভ রাখার জন্য
+    window.jobLots = [];    // লিগ্যাসি লট সেভ রাখার জন্য
 
     window.onload = function() {
         let savedShift = localStorage.getItem('user_global_shift') || 'Day';
@@ -332,11 +334,15 @@
 
     // --- CHANGE EVENT LISTENERS (For Magic Jump & Logic) ---
     document.getElementById('i_color').addEventListener('change', function(e) {
-        loadSizesAndPercentages(); updateDynamicSummary();
+        loadSizesAndPercentages(); 
+        filterLotsBySize(); 
+        updateDynamicSummary();
         if(e.isTrusted) setTimeout(() => smartJump(this), 50);
     });
     document.getElementById('i_size').addEventListener('change', function(e) {
-        autoFillQtyWeight(); updateDynamicSummary();
+        autoFillQtyWeight(); 
+        filterLotsBySize(); 
+        updateDynamicSummary();
         if(e.isTrusted) setTimeout(() => smartJump(this), 50);
     });
     document.getElementById('i_lot').addEventListener('change', function(e) {
@@ -475,16 +481,16 @@
                 
                 window.jobMatrix = d.matrix;
                 window.jobIssues = d.issues;
+                window.allocRules = d.alloc_rules || []; 
+                window.jobLots = d.lots || []; 
                 
                 let c_sel = document.getElementById('i_color'); c_sel.innerHTML = '<option value="">-- Select --</option>';
                 d.colors.forEach(c => c_sel.innerHTML += `<option value="${c}">${c}</option>`);
 
-                let l_sel = document.getElementById('i_lot'); l_sel.innerHTML = '<option value="">-- Select --</option>';
-                d.lots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
-
                 let o_sel = document.getElementById('i_operation'); o_sel.innerHTML = '<option value="">-- Select --</option>';
                 d.operations.forEach(o => o_sel.innerHTML += `<option value="${o}">${o}</option>`);
                 
+                filterLotsBySize();
                 updateDynamicSummary();
                 
                 if(callback) { callback(); }
@@ -493,6 +499,49 @@
                 }
             }
         });
+    }
+
+    // --- LOT FILTER LOGIC (Matrix Rules) ---
+    function filterLotsBySize() {
+        let col = document.getElementById('i_color').value;
+        let sz = document.getElementById('i_size').value;
+        let l_sel = document.getElementById('i_lot');
+        
+        let currentLot = l_sel.value;
+        l_sel.innerHTML = '<option value="">-- Select --</option>';
+        
+        if (window.allocRules && window.allocRules.length > 0) {
+            if (col && sz) {
+                // Color এবং Size দুইটাই সিলেক্ট হলে এক্স্যাক্ট ম্যাট্রিক্স রুলস খাটবে
+                let matchingRules = window.allocRules.filter(r => r.color === col && r.size === sz);
+                if (matchingRules.length > 0) {
+                    matchingRules.forEach(r => {
+                        // ভ্যালু হিসেবে শুধু লটের নাম যাবে, কিন্তু ইউজার ড্রপডাউনে [Alloc: .. Pcs] দেখতে পাবে
+                        l_sel.innerHTML += `<option value="${r.lot}">${r.lot} [Alloc: ${r.alloc_qty} Pcs]</option>`;
+                    });
+                } else {
+                    l_sel.innerHTML += `<option value="" disabled>-- No Lot Allocated --</option>`;
+                }
+            } else if (col) {
+                // শুধু Color সিলেক্ট হলে ওই কালারের সব ইউনিক লট দেখাবে
+                let colorRules = window.allocRules.filter(r => r.color === col);
+                let uniqueLots = [...new Set(colorRules.map(r => r.lot))];
+                uniqueLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
+            } else {
+                let uniqueLots = [...new Set(window.allocRules.map(r => r.lot))];
+                uniqueLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
+            }
+        } else {
+            // লিগ্যাসি সাপোর্ট (যদি ম্যাট্রিক্স ছাড়া পুরোনো কোনো অর্ডার থাকে)
+            if(window.jobLots) window.jobLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
+        }
+        
+        // সিলেকশন রিস্টোর করা বা অটো-সিলেক্ট করা (যদি একটাই লট থাকে)
+        if (currentLot && Array.from(l_sel.options).some(opt => opt.value === currentLot)) {
+            l_sel.value = currentLot;
+        } else if (l_sel.options.length === 2 && !l_sel.options[1].disabled) {
+            l_sel.selectedIndex = 1;
+        }
     }
 
     // --- Dynamic Summary Logic ---
@@ -780,7 +829,15 @@
                     loadSizesAndPercentages();
                     document.getElementById('i_size').value = d.size;
                     
-                    document.getElementById('i_lot').value = d.lot;
+                    filterLotsBySize(); // <--- লট ফিল্টার কল করতে হবে
+                    
+                    // ড্রপডাউনে লিগ্যাসি লট না থাকলে অ্যাড করে নেওয়া
+                    let l_sel = document.getElementById('i_lot');
+                    if(d.lot && !Array.from(l_sel.options).some(o => o.value === d.lot)) {
+                        l_sel.innerHTML += `<option value="${d.lot}">${d.lot}</option>`;
+                    }
+                    l_sel.value = d.lot;
+                    
                     document.getElementById('i_operation').value = d.operation;
                     updateDynamicSummary();
                     
