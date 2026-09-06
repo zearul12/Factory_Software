@@ -139,8 +139,12 @@
                 <div class="form-group"><label>SIZE <span style="color:#e74c3c;">*</span></label>
                     <select id="i_size" class="form-control fast-nav"><option value="">-- Select --</option></select>
                 </div>
-                <div class="form-group"><label>LOT <span style="color:#e74c3c;">*</span></label>
-                    <select id="i_lot" class="form-control fast-nav"><option value="">-- Select --</option></select>
+                <div class="form-group"><label>LOT(S) <span style="color:#e74c3c;">*</span></label>
+                    <div id="lot_checkbox_container" style="display:flex; flex-wrap:wrap; gap:5px; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; min-height: 38px; max-height: 76px; overflow-y: auto; background: var(--main-bg);">
+                        <span style="color:#aaa; font-style:italic; font-size: 11px; padding: 4px;">Select size first...</span>
+                    </div>
+                    <!-- হিডেন ইনপুট যা ব্যাকএন্ডে কমা দিয়ে লটগুলো পাঠাবে -->
+                    <input type="hidden" id="i_lot" value="">
                 </div>
                 <div class="form-group"><label>OPERATION <span style="color:#e74c3c;">*</span></label>
                     <select id="i_operation" class="form-control fast-nav"><option value="">-- Select --</option></select>
@@ -501,47 +505,65 @@
         });
     }
 
-    // --- LOT FILTER LOGIC (Matrix Rules) ---
-    function filterLotsBySize() {
+    // --- LOT FILTER LOGIC (Supports Multi-Lot Checkboxes & Auto-Check) ---
+    function filterLotsBySize(isLoad = false) {
         let col = document.getElementById('i_color').value;
         let sz = document.getElementById('i_size').value;
-        let l_sel = document.getElementById('i_lot');
+        let lotContainer = document.getElementById('lot_checkbox_container');
         
-        let currentLot = l_sel.value;
-        l_sel.innerHTML = '<option value="">-- Select --</option>';
+        let currentLots = [];
+        if (isLoad) {
+            currentLots = document.getElementById('i_lot').value.split(',').map(s => s.trim());
+        }
+
+        let html = '';
         
+        // চেকবক্স তৈরির হেল্পার ফাংশন
+        function makeChk(val, label, autoCheck) {
+            let chk = '';
+            if (isLoad) {
+                if (currentLots.includes(val)) chk = 'checked';
+            } else {
+                if (autoCheck) chk = 'checked'; // ম্যাট্রিক্স রুলস থাকলে অটো-টিক হবে!
+            }
+            return `<label style="display:inline-flex; align-items:center; gap:5px; font-size:11px; background:rgba(0,123,255,0.08); padding:4px 8px; border-radius:4px; cursor:pointer; margin:0; border: 1px solid rgba(0,123,255,0.2);">
+                        <input type="checkbox" value="${val}" class="lot-chk" ${chk} onchange="updateHiddenLot()">
+                        ${label}
+                    </label>`;
+        }
+
         if (window.allocRules && window.allocRules.length > 0) {
-            if (col && sz) {
-                // Color এবং Size দুইটাই সিলেক্ট হলে এক্স্যাক্ট ম্যাট্রিক্স রুলস খাটবে
-                let matchingRules = window.allocRules.filter(r => r.color === col && r.size === sz);
+            let colorRules = window.allocRules.filter(r => r.color === col);
+            let isLotFree = colorRules.some(r => r.lot_rule === 'Free');
+
+            if (isLotFree) {
+                let uniqueLots = [...new Set(colorRules.map(r => r.lot))];
+                uniqueLots.forEach(l => { html += makeChk(l, `${l} [Free]`, false); });
+            } else if (col && sz) {
+                let matchingRules = colorRules.filter(r => r.size === sz);
                 if (matchingRules.length > 0) {
-                    matchingRules.forEach(r => {
-                        // ভ্যালু হিসেবে শুধু লটের নাম যাবে, কিন্তু ইউজার ড্রপডাউনে [Alloc: .. Pcs] দেখতে পাবে
-                        l_sel.innerHTML += `<option value="${r.lot}">${r.lot} [Alloc: ${r.alloc_qty} Pcs]</option>`;
-                    });
+                    matchingRules.forEach(r => { html += makeChk(r.lot, `${r.lot} [Alloc: ${r.alloc_qty}]`, true); });
                 } else {
-                    l_sel.innerHTML += `<option value="" disabled>-- No Lot Allocated --</option>`;
+                    html = `<span style="color:#e74c3c; font-size:11px; padding: 4px;">-- No Lot Allocated --</span>`;
                 }
             } else if (col) {
-                // শুধু Color সিলেক্ট হলে ওই কালারের সব ইউনিক লট দেখাবে
-                let colorRules = window.allocRules.filter(r => r.color === col);
                 let uniqueLots = [...new Set(colorRules.map(r => r.lot))];
-                uniqueLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
-            } else {
-                let uniqueLots = [...new Set(window.allocRules.map(r => r.lot))];
-                uniqueLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
+                uniqueLots.forEach(l => { html += makeChk(l, l, false); });
             }
         } else {
-            // লিগ্যাসি সাপোর্ট (যদি ম্যাট্রিক্স ছাড়া পুরোনো কোনো অর্ডার থাকে)
-            if(window.jobLots) window.jobLots.forEach(l => l_sel.innerHTML += `<option value="${l}">${l}</option>`);
+            if(window.jobLots) {
+                window.jobLots.forEach(l => { html += makeChk(l, l, false); });
+            }
         }
         
-        // সিলেকশন রিস্টোর করা বা অটো-সিলেক্ট করা (যদি একটাই লট থাকে)
-        if (currentLot && Array.from(l_sel.options).some(opt => opt.value === currentLot)) {
-            l_sel.value = currentLot;
-        } else if (l_sel.options.length === 2 && !l_sel.options[1].disabled) {
-            l_sel.selectedIndex = 1;
-        }
+        lotContainer.innerHTML = html || `<span style="color:#aaa; font-style:italic; font-size: 11px; padding: 4px;">Select color & size first...</span>`;
+        updateHiddenLot();
+    }
+
+    // চেকবক্স চেঞ্জ হলে হিডেন ফিল্ড আপডেট হবে
+    function updateHiddenLot() {
+        let checked = Array.from(document.querySelectorAll('.lot-chk:checked')).map(cb => cb.value);
+        document.getElementById('i_lot').value = checked.join(', ');
     }
 
     // --- Dynamic Summary Logic ---
@@ -829,14 +851,9 @@
                     loadSizesAndPercentages();
                     document.getElementById('i_size').value = d.size;
                     
-                    filterLotsBySize(); // <--- লট ফিল্টার কল করতে হবে
-                    
-                    // ড্রপডাউনে লিগ্যাসি লট না থাকলে অ্যাড করে নেওয়া
-                    let l_sel = document.getElementById('i_lot');
-                    if(d.lot && !Array.from(l_sel.options).some(o => o.value === d.lot)) {
-                        l_sel.innerHTML += `<option value="${d.lot}">${d.lot}</option>`;
-                    }
-                    l_sel.value = d.lot;
+                    // হিডেন ফিল্ডে আগে ভ্যালু সেট করে তারপর ফিল্টার ফাংশন কল করতে হবে
+                    document.getElementById('i_lot').value = d.lot;
+                    filterLotsBySize(true); // 'true' মানে এটা ডাটাবেজ থেকে লোড হচ্ছে, তাই সেভ করা লটগুলো টিক হয়ে যাবে
                     
                     document.getElementById('i_operation').value = d.operation;
                     updateDynamicSummary();

@@ -86,7 +86,8 @@ class KnittingColor(models.Model):
     pack_type = models.CharField(max_length=50, default='Solid Size')
     assort_ratio = models.CharField(max_length=100, blank=True, null=True)
     # To store the complex Lot-Size allocation matrix safely
-    lot_allocation_json = models.TextField(blank=True, null=True) 
+    lot_allocation_json = models.TextField(blank=True, null=True)
+    lot_rule = models.CharField(max_length=20, default='Fixed')
 
 class KnittingYarn(models.Model):
     color = models.ForeignKey(KnittingColor, on_delete=models.CASCADE, related_name='yarns')
@@ -116,6 +117,7 @@ class KnittingSize(models.Model):
     total_lbs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     bundle_qty = models.IntegerField(default=0, blank=True, null=True)
     sort_order = models.IntegerField(default=0)
+    operation_weights_json = models.TextField(blank=True, null=True)
 
     # --- HR Admin Models ---
 class Operator(models.Model):

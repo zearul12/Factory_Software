@@ -208,18 +208,37 @@
             
             <!-- REFINED COLOR HEADER SECTION (2 Fields Inline) -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px; align-items:flex-end;">
+                <!-- REFINED COLOR HEADER SECTION -->
+            <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:15px; margin-bottom: 20px; align-items:flex-end;">
                 <div class="form-group">
                     <label>SELECTED COLOR NAME</label>
                     <input type="text" id="currColorName" class="form-control" onchange="updateColName()" autocomplete="off">
                 </div>
                 <div class="form-group">
-    <label>PACK TYPE <span style="color:#e74c3c;">*</span></label>
-    <select id="currPackType" class="form-control" onchange="updatePackType()">
-        <option value="" disabled selected>-- Select --</option>
-        <option value="Solid Size">Solid Size</option>
-        <option value="Assort Size">Assort Size</option>
-    </select>
-</div>
+                    <label>PACK TYPE <span style="color:#e74c3c;">*</span></label>
+                    <select id="currPackType" class="form-control" onchange="updatePackType()">
+                        <option value="" disabled selected>-- Select --</option>
+                        <option value="Solid Size">Solid Size</option>
+                        <option value="Assort Size">Assort Size</option>
+                    </select>
+                </div>
+                <div class="form-group" id="lotRuleContainer" style="display: none;">
+                    <label>LOT RULE <span style="color:#e74c3c;">*</span></label>
+                    <select id="currLotRule" class="form-control" onchange="updateLotRule()">
+                        <option value="" disabled selected>-- Select --</option>
+                        <option value="Fixed">Lot Fixed</option>
+                        <option value="Free">Lot Free</option>
+                    </select>
+                </div>
+            </div>
+                <!-- Dynamic Lot Rule Field (Shown only on Solid Size) -->
+                <div class="form-group" id="lotRuleContainer" style="display: none;">
+                    <label>LOT RULE <span style="color:#e74c3c;">*</span></label>
+                    <select id="currLotRule" class="form-control" onchange="updateLotRule()">
+                        <option value="Fixed">Lot Fixed</option>
+                        <option value="Free">Lot Free</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Size Matrix -->
@@ -292,6 +311,18 @@
         </div>
     </div>
 
+<!-- ALLOCATION MATRIX -->
+    <div class="entry-card" id="allocSection" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+            <label style="margin:0; font-size: 15px; color:#2c3e50;"><i class="fa-solid fa-table-cells" style="color:#f39c12;"></i> LOT - SIZE ALLOCATION MATRIX</label>
+            <button type="button" class="btn-action" style="padding: 6px 20px; font-size:13px; background:#f39c12; color:#fff;" onclick="autoCalculateMatrix()"><i class="fa-solid fa-bolt"></i> Generate Matrix</button>
+        </div>
+        <div id="allocContainer" style="overflow-x: auto; padding-bottom: 10px;">
+            <div style="color:#aaa; font-style:italic; font-size:12px; text-align:center; padding: 20px;">
+                Add Sizes, Yarns, and Lots first, then click "Generate Matrix" to allocate lots to specific sizes.
+            </div>
+        </div>
+    </div>
 <!-- Modal Logic -->
 <div id="reject-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: all 0.3s ease;">
     <div style="background: var(--card-bg); padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border-color);">
@@ -385,34 +416,35 @@
                 let idx = qtys.indexOf(e.target); 
                 if (idx > -1 && idx < qtys.length - 1) { qtys[idx + 1].focus(); qtys[idx + 1].select(); }
                 else if (idx === qtys.length - 1) {
-                    let firstWt = document.querySelector('.matrix-body-wt');
-                    if(firstWt) { firstWt.focus(); firstWt.select(); }
+                    // ফিক্স: এখন ডায়নামিক অপারেশন কলামের ক্লাস matrix-op-wt
+                    let firstOpInput = document.querySelector('.matrix-op-wt');
+                    if(firstOpInput) { firstOpInput.focus(); firstOpInput.select(); }
                 }
                 return; 
             }
-            // Matrix Body Weight Jump
-            if (e.target.classList.contains('matrix-body-wt')) {
-                e.preventDefault(); 
-                let wts = Array.from(document.querySelectorAll('.matrix-body-wt'));
-                let idx = wts.indexOf(e.target); 
-                if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
-                else if (idx === wts.length - 1) {
-                    let firstOthWt = document.querySelector('.matrix-other-wt');
-                    if(firstOthWt) { firstOthWt.focus(); firstOthWt.select(); }
+            // Dynamic Operation Weight Vertical Jump
+            if (e.target.classList.contains('matrix-op-wt')) {
+                e.preventDefault();
+                let currentOp = e.target.getAttribute('data-op');
+                let inputs = Array.from(document.querySelectorAll(`.matrix-op-wt[data-op="${currentOp}"]`));
+                let idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                    inputs[idx + 1].select();
+                } else if (idx === inputs.length - 1) {
+                    // Jump to next operation's 1st row or bundle
+                    let ops = orderData.ops;
+                    let opIdx = ops.indexOf(currentOp);
+                    if (opIdx > -1 && opIdx < ops.length - 1) {
+                        let nextOp = ops[opIdx + 1];
+                        let nextFirstInput = document.querySelector(`.matrix-op-wt[data-op="${nextOp}"]`);
+                        if (nextFirstInput) { nextFirstInput.focus(); nextFirstInput.select(); }
+                    } else {
+                        let firstBndl = document.querySelector('.matrix-bundle');
+                        if (firstBndl) { firstBndl.focus(); firstBndl.select(); }
+                    }
                 }
-                return; 
-            }
-            // Matrix Other Weight Jump
-            if (e.target.classList.contains('matrix-other-wt')) {
-                e.preventDefault(); 
-                let wts = Array.from(document.querySelectorAll('.matrix-other-wt'));
-                let idx = wts.indexOf(e.target); 
-                if (idx > -1 && idx < wts.length - 1) { wts[idx + 1].focus(); wts[idx + 1].select(); }
-                else if (idx === wts.length - 1) {
-                    let firstBndl = document.querySelector('.matrix-bundle');
-                    if(firstBndl) { firstBndl.focus(); firstBndl.select(); }
-                }
-                return; 
+                return;
             }
             // Matrix Bundle Jump
             if (e.target.classList.contains('matrix-bundle')) {
@@ -617,10 +649,27 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         name = name.trim(); 
         if(name) {
             if(orderData.ops.some(o => o.toLowerCase() === name.toLowerCase())) { showModal(`Operation '${name}' is already added!`); return; }
-            orderData.ops.push(name); renderOps(); 
+            orderData.ops.push(name); 
+            renderOps(); 
+            // ফিক্স: সাথে সাথে সাইজ টেবিল আপডেট করা
+            if(actColId) {
+                let c = orderData.colors.find(x => x.id === actColId);
+                renderSizes(c);
+                calcAll();
+            }
         } 
     }
-    function delOp(n) { orderData.ops = orderData.ops.filter(o => o !== n); renderOps(); }
+    function delOp(n) { 
+        if(n.toLowerCase() === 'body') { showModal("Cannot delete 'Body' operation as it is mandatory!"); return; }
+        orderData.ops = orderData.ops.filter(o => o !== n); 
+        renderOps(); 
+        // ফিক্স: সাথে সাথে সাইজ টেবিল আপডেট করা
+        if(actColId) {
+            let c = orderData.colors.find(x => x.id === actColId);
+            renderSizes(c);
+            calcAll();
+        }
+    }
     function renderOps() { document.getElementById('opContainer').innerHTML = orderData.ops.map(o => `<div class="tag">${o} <span onclick="delOp('${o}')"><i class="fa-solid fa-xmark"></i></span></div>`).join(''); }
 
     function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -631,7 +680,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         if(n) { 
             if(orderData.colors.some(c => c.name.toLowerCase() === n.toLowerCase())) { showModal(`Color '${n}' already exists!`); return; }
             let c = { 
-                id: generateId(), name: n, packType: '', 
+                id: generateId(), name: n, packType: '', lotRule: '',
                 sizes: [], yarns: [{id: generateId(), name: '', type: 'Main', parentId: '', consPct: '', allowPct: '', reqLbs: 0, lots: [], showLotInput: true}], 
                 allocations: {}, totalLbs: 0 
             }; 
@@ -669,7 +718,8 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
     function openRight() { 
         if(!actColId) { 
             document.getElementById('currColorName').value = '';
-            document.getElementById('currPackType').value = ''; // Reset
+            document.getElementById('currPackType').value = '';
+            document.getElementById('lotRuleContainer').style.display = 'none';
             document.getElementById('sizeTbody').innerHTML = `<tr><td colspan="10" style="color:#aaa; font-style:italic;">Please select or create a color first.</td></tr>`;
             document.getElementById('sizeTfoot').innerHTML = '';
             document.getElementById('yarnSection').style.display = 'none';
@@ -680,6 +730,14 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         document.getElementById('currColorName').value = c.name; 
         document.getElementById('currPackType').value = c.packType || '';
         
+        let ruleBox = document.getElementById('lotRuleContainer');
+        if(c.packType === 'Solid Size') {
+            ruleBox.style.display = 'block';
+            document.getElementById('currLotRule').value = c.lotRule || '';
+        } else {
+            ruleBox.style.display = 'none';
+        }
+
         document.getElementById('yarnSection').style.display = 'block';
         document.getElementById('allocSection').style.display = 'block';
         renderSizes(c); 
@@ -693,69 +751,132 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             orderData.colors.find(c => c.id === actColId).name = newName; renderColors(); 
         } else if(newName) { showModal("This color name already exists!"); document.getElementById('currColorName').value = orderData.colors.find(c => c.id === actColId).name; }
     }
-
     function updatePackType() {
         let c = orderData.colors.find(x => x.id === actColId);
         c.packType = document.getElementById('currPackType').value;
         
-        // MAGIC: Auto Focus & Open Size Format Selection
+        let ruleBox = document.getElementById('lotRuleContainer');
+        if(c.packType === 'Solid Size') {
+            ruleBox.style.display = 'block';
+            c.lotRule = c.lotRule || '';
+            document.getElementById('currLotRule').value = c.lotRule;
+        } else {
+            ruleBox.style.display = 'none';
+            c.lotRule = '';
+        }
+
         setTimeout(() => {
             let el = document.getElementById('sizeFormatSelect');
             if(el) { el.focus(); try { el.showPicker(); } catch(e) {} }
         }, 50);
     }
+
+    function updateLotRule() {
+        let c = orderData.colors.find(x => x.id === actColId);
+        c.lotRule = document.getElementById('currLotRule').value;
+    }
+
     
     function loadSizes() { 
         let f = document.getElementById('sizeFormatSelect').value; 
         if(!f || !actColId) return; 
         let c = orderData.colors.find(x => x.id === actColId); 
         let sizesArr = f === 'empty' ? [''] : sizeTemplates[f];
-        c.sizes = sizesArr.map(s => ({ id: generateId(), name: s, oQty: "", pQty: 0, bodyWt: "", otherWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1 })); 
+        c.sizes = sizesArr.map(s => {
+            let opWts = {}; orderData.ops.forEach(op => { opWts[op] = ""; });
+            return { id: generateId(), name: s, oQty: "", pQty: 0, opWeights: opWts, bodyWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1 };
+        });
         renderSizes(c); calcAll(); 
         setTimeout(() => { let firstQty = document.querySelector('.matrix-qty'); if(firstQty) firstQty.focus(); }, 100);
     }
     
     function renderSizes(c) { 
         let cIdx = orderData.colors.findIndex(x => x.id === c.id);
+        let ops = orderData.ops.length > 0 ? orderData.ops : ['Body'];
+
+        let theadHtml = `
+        <tr>
+            <th width="3%">#</th>
+            <th width="10%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
+            <th width="9%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
+            <th width="9%">PLAN QTY (+<span id="displayPct">0</span>%)</th>`;
         
+        ops.forEach(op => {
+            let copyBtn = (op.toLowerCase() !== 'body') ? `<button type="button" style="border: none; background: #3498db; color: white; border-radius: 3px; padding: 1px 5px; font-size: 9px; cursor: pointer; margin-left: 4px;" onclick="copyDownOp('${op}')" title="Copy 1st value to all"><i class="fa-solid fa-copy"></i></button>` : '';
+            theadHtml += `<th style="min-width: 80px;">${op.toUpperCase()} (gm) ${copyBtn}</th>`;
+        });
+
+        theadHtml += `
+            <th width="9%" style="background: rgba(0,0,0,0.02);">TOTAL WT (gm)</th>
+            <th width="8%">TOTAL (Lbs)</th>
+            <th width="8%">BUNDLE QTY</th>
+            <th width="6%">ACTION</th>
+        </tr>`;
+        document.querySelector('#sizeTbody').previousElementSibling.innerHTML = theadHtml;
+
         document.getElementById('sizeTbody').innerHTML = c.sizes.map((s, i) => {
             let szNameId = `sz_name_${cIdx}_${i}`;
             let qId = `qty_${cIdx}_${i}`;
-            let bwId = `bwt_${cIdx}_${i}`;
             let bId = `bndl_${cIdx}_${i}`;
             
-            // SMART FIX: Check exact index for precise highlighting
             let szHi = (window.isApprovalMode && window.changedFields.includes(szNameId)) ? 'highlight-change' : '';
             let qHi = (window.isApprovalMode && window.changedFields.includes(qId)) ? 'highlight-change' : ''; 
-            // Body wt & bundle qty are ignored from approval, so no highlight logic here
             
+            s.opWeights = s.opWeights || {};
+            if(!s.opWeights['Body'] && s.bodyWt) s.opWeights['Body'] = s.bodyWt;
+
+            let opTds = ops.map(op => {
+                let val = s.opWeights[op] !== undefined ? s.opWeights[op] : "";
+                return `<td><input type="text" autocomplete="off" class="td-input matrix-op-wt" data-op="${op}" value="${val}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOpWeight('${s.id}', '${op}', this.value)"></td>`;
+            }).join('');
+
             return `
             <tr>
                 <td>${i+1}</td>
                 <td><input type="text" id="${szNameId}" autocomplete="off" class="td-input ${szHi}" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
                 <td><input type="text" id="${qId}" autocomplete="off" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
                 <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
-                
-                <td><input type="text" id="${bwId}" autocomplete="off" class="td-input matrix-body-wt" value="${s.bodyWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBWt('${s.id}', this.value)"></td>
-                <td><input type="text" autocomplete="off" class="td-input matrix-other-wt" value="${s.otherWt}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOWt('${s.id}', this.value)"></td>
+                ${opTds}
                 <td id="totWt_${s.id}" style="font-weight:bold; background:rgba(0,0,0,0.02);">${s.totalWt}</td>
-                
                 <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
                 <td><input type="text" id="${bId}" autocomplete="off" class="td-input matrix-bundle" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
                 <td>
-                    <button class="btn-circle btn-plus" style="margin-right:10px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn-circle btn-plus" style="margin-right:5px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
                     <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
                 </td>
-            </tr>`
+            </tr>`;
         }).join(''); 
+    }
+    function copyDownOp(opName) {
+        if(!actColId) return;
+        let c = orderData.colors.find(x => x.id === actColId);
+        if(c.sizes.length < 2) return;
+        
+        let firstVal = (c.sizes[0].opWeights && c.sizes[0].opWeights[opName] !== undefined) ? c.sizes[0].opWeights[opName] : "";
+        if(firstVal === "") return;
+
+        for(let i = 1; i < c.sizes.length; i++) {
+            c.sizes[i].opWeights = c.sizes[i].opWeights || {};
+            c.sizes[i].opWeights[opName] = firstVal;
+        }
+        renderSizes(c);
+        calcAll();
+    }
+
+    function updateOpWeight(sId, opName, val) {
+        let c = orderData.colors.find(x => x.id === actColId);
+        let s = c.sizes.find(x => x.id === sId);
+        s.opWeights = s.opWeights || {};
+        s.opWeights[opName] = val ? parseInt(val) : "";
+        if(opName.toLowerCase() === 'body') s.bodyWt = s.opWeights[opName];
+        calcAll();
     }
     
     function updateSzName(id, val) { orderData.colors.find(x => x.id === actColId).sizes.find(x => x.id === id).name = val; renderAllocationTable(); }
     function delSz(id) { let c = orderData.colors.find(x => x.id === actColId); c.sizes = c.sizes.filter(s => s.id !== id); renderSizes(c); calcAll(); renderAllocationTable(); }
-    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, bodyWt: "", otherWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1}); renderSizes(c); calcAll(); renderAllocationTable(); }
+    function addSz(i) { let c = orderData.colors.find(x => x.id === actColId); let opWts = {}; orderData.ops.forEach(op => opWts[op] = "");
+        c.sizes.splice(i+1, 0, {id: generateId(), name: '', oQty: "", pQty: 0, opWeights: opWts, bodyWt: "", totalWt: 0, lbs: 0, bundleQty: "", sort: 1}); renderSizes(c); calcAll(); renderAllocationTable(); }
     function updateQ(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.oQty = parseInt(val) || 0; calcAll(); renderAllocationTable(); }
-    function updateBWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bodyWt = parseInt(val) || 0; calcAll(); }
-    function updateOWt(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.otherWt = parseInt(val) || 0; calcAll(); }
     function updateBundle(sId, val) { let c = orderData.colors.find(x => x.id === actColId); let s = c.sizes.find(x => x.id === sId); s.bundleQty = val ? parseInt(val) : ""; }
 
     // --- Modern Yarn & Lot Management ---
@@ -1329,9 +1450,15 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
                 tOrdQty += s.oQty; tPlanQty += s.pQty; 
                 let td = document.getElementById('pQty_' + s.id); if(td) td.innerText = s.pQty;
                 
-                let bWt = parseInt(s.bodyWt) || 0;
-                let oWt = parseInt(s.otherWt) || 0;
-                s.totalWt = bWt + oWt;
+                let rowTotalWt = 0;
+                s.opWeights = s.opWeights || {};
+                let ops = orderData.ops.length > 0 ? orderData.ops : ['Body'];
+                ops.forEach(op => {
+                    let w = parseInt(s.opWeights[op]) || 0;
+                    rowTotalWt += w;
+                });
+                s.totalWt = rowTotalWt;
+                s.bodyWt = s.opWeights['Body'] || 0;
                 let tWtTd = document.getElementById('totWt_' + s.id); if(tWtTd) tWtTd.innerText = s.totalWt;
 
                 let rowLbs = 0; 
@@ -1500,15 +1627,15 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
                 orderData.colors = [];
                 d.colors.forEach(c => {
                     let col = { 
-                        id: generateId(), name: c.name, packType: c.packType, ratio: '', 
+                        id: generateId(), name: c.name, packType: c.packType, lotRule: c.lotRule || 'Fixed', ratio: '', 
                         sizes: [], yarns: [], totalLbs: 0, allocations: c.allocations || {} 
-                    };
-                    c.sizes.forEach(sz => {
+                    }; 
+                    c.sizes.forEach(sz => { 
                         col.sizes.push({ 
                             id: generateId(), name: sz.name, oQty: sz.oQty, pQty: sz.pQty, 
-                            bodyWt: sz.bodyWt, otherWt: sz.otherWt, totalWt: sz.totalWt,
+                            opWeights: sz.opWeights || {}, bodyWt: sz.bodyWt, totalWt: sz.totalWt, 
                             lbs: parseFloat(sz.lbs), bundleQty: sz.bundleQty || "", sort: 1 
-                        });
+                        }); 
                     });
                     c.yarns.forEach(y => {
                         let yarnObj = { 
@@ -1625,16 +1752,22 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         let hasError = false;
         orderData.colors.forEach(c => {
 
-            if(!c.packType) { 
-        showModal(`PACK TYPE is missing in color: ${c.name}`); 
-        hasError = true; 
-    }
+            if(!c.packType) { showModal(`PACK TYPE is missing in color: ${c.name}`); hasError = true; }
+            if(c.packType === 'Solid Size' && !c.lotRule) { showModal(`LOT RULE is missing in color: ${c.name}`); hasError = true; }
 
             if(c.sizes.length === 0) { showModal(`Please add sizes for color: ${c.name}`); hasError = true; }
             c.sizes.forEach(sz => {
                 if(!sz.name.trim()) { showModal(`SIZE NAME is missing in color: ${c.name}`); hasError = true; }
                 if(!sz.oQty || sz.oQty <= 0) { showModal(`ORDER QTY is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
-                if(!sz.bodyWt || sz.bodyWt <= 0) { showModal(`BODY WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
+                let ops = orderData.ops.length > 0 ? orderData.ops : ['Body'];
+                ops.forEach(op => {
+                    let w = (sz.opWeights && sz.opWeights[op] !== undefined) ? sz.opWeights[op] : "";
+                    if(w === "" || parseInt(w) < 0) {
+                        showModal(`Weight for '${op}' is mandatory in Size: ${sz.name} (${c.name}).`);
+                        hasError = true;
+                    }
+                });
+                if(!sz.totalWt || sz.totalWt <= 0) { showModal(`Total Weight must be greater than 0 for size: ${sz.name} in color: ${c.name}`); hasError = true; } { showModal(`BODY WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
             });
             
             if(c.yarns.length === 0) { showModal(`Please add at least one Yarn for color: ${c.name}`); hasError = true; }
@@ -1673,6 +1806,14 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             }
         });
         if(hasError) return;
+        // --- MAGIC: Auto-Generate Matrix if not generated by user ---
+        orderData.colors.forEach(c => {
+            let hasAllocs = c.allocations && Object.keys(c.allocations).length > 0;
+            if(!hasAllocs) {
+                actColId = c.id;
+                autoCalculateMatrix();
+            }
+        });
 
         let prefix = document.querySelector('.job-prefix').innerText.replace('-', '');
         let jobNo = prefix + '-' + document.getElementById('job_year').value + '-' + document.getElementById('job_sequence').value;
@@ -1693,15 +1834,20 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             total_plan_qty: tPlan, total_lbs: tLbs, avg_wt: avgWtDz,
             colors: orderData.colors.map(c => ({ 
                 name: c.name, 
-                packType: c.packType,
-                ratio: '',
-                allocations: c.allocations,
-                sizes: c.sizes,
-                yarns: c.yarns.map(y => ({
-                    id: y.id, name: y.name, type: y.type, parentId: y.parentId,
-                    consPct: y.consPct, allowPct: y.allowPct, reqLbs: y.reqLbs,
-                    lots: y.lots.map(l => ({ id: l.id, lotName: l.lotName, lbs: parseFloat(l.lbs) || 0 }))
-                }))
+                packType: c.packType, 
+                lotRule: c.lotRule || 'Fixed',
+                ratio: '', 
+                allocations: c.allocations, 
+                sizes: c.sizes.map(s => ({
+                    id: s.id, name: s.name, oQty: s.oQty, pQty: s.pQty,
+                    opWeights: s.opWeights, bodyWt: s.bodyWt, totalWt: s.totalWt,
+                    lbs: s.lbs, bundleQty: s.bundleQty, sort: s.sort
+                })),
+                yarns: c.yarns.map(y => ({ 
+                    id: y.id, name: y.name, type: y.type, parentId: y.parentId, 
+                    consPct: y.consPct, allowPct: y.allowPct, reqLbs: y.reqLbs, 
+                    lots: y.lots.map(l => ({ id: l.id, lotName: l.lotName, lbs: parseFloat(l.lbs) || 0 })) 
+                })) 
             }))
         };
 

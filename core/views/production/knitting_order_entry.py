@@ -183,30 +183,37 @@ def save_knitting_order_ajax(request):
             order.save()
 
             for col_data in data['colors']:
-                # --- SMART FIX: Map frontend Size IDs to actual Size Names for a readable Matrix ---
-                frontend_size_map = {sz.get('id', ''): sz.get('name', '') for sz in col_data.get('sizes', [])}
+                frontend_size_map = {str(sz.get('id', '')): str(sz.get('name', '')) for sz in col_data.get('sizes', [])}
                 raw_allocs = col_data.get('allocations', {})
                 clean_allocs = {}
                 for alloc_key, sz_dict in raw_allocs.items():
-                    clean_allocs[alloc_key] = {frontend_size_map.get(k, k): v for k, v in sz_dict.items()}
+                    clean_allocs[alloc_key] = {frontend_size_map.get(str(k), str(k)): v for k, v in sz_dict.items()}
                 
                 col_obj = KnittingColor.objects.create(
                     order=order, 
                     color_name=col_data['name'],
                     pack_type=col_data.get('packType', 'Solid Size'),
+                    lot_rule=col_data.get('lotRule', 'Fixed'), # New Lot Rule Field
                     assort_ratio=col_data.get('ratio', ''),
-                    lot_allocation_json=json.dumps(clean_allocs) # Now saved with actual Size Names!
+                    lot_allocation_json=json.dumps(clean_allocs)
                 )
                 
                 for sz_data in col_data['sizes']:
+                    op_wts = sz_data.get('opWeights', {})
+                    body_wt = to_i(op_wts.get('Body', sz_data.get('bodyWt', 0)))
+                    
                     KnittingSize.objects.create(
-                        color=col_obj, size_name=sz_data['name'], order_qty=sz_data['oQty'],
+                        color=col_obj, 
+                        size_name=sz_data['name'], 
+                        order_qty=sz_data['oQty'],
                         plan_qty=sz_data['pQty'], 
-                        body_weight=to_i(sz_data.get('bodyWt')),
-                        others_weight=to_i(sz_data.get('otherWt')),
+                        body_weight=body_wt,
+                        others_weight=0,
+                        operation_weights_json=json.dumps(op_wts), # Dynamic Operation Weights
                         size_wt_gm=to_i(sz_data.get('totalWt')),
                         total_lbs=sz_data['lbs'],
-                        bundle_qty=int(sz_data.get('bundleQty') or 0), sort_order=sz_data['sort']
+                        bundle_qty=int(sz_data.get('bundleQty') or 0), 
+                        sort_order=sz_data['sort']
                     )
                 
                 frontend_yarn_map = {}
@@ -255,12 +262,19 @@ def get_knitting_order_details_ajax(request, sys_id):
         order = KnittingOrder.objects.get(system_id=sys_id)
         
         colors_data = []
-        for c in order.colors.all().order_by('id'):  # <--- এখানে .order_by('id') অ্যাড করুন
+        for c in order.colors.all().order_by('id'):
             sizes = []
             for s in c.sizes.all().order_by('sort_order'):
+                op_weights = {}
+                if s.operation_weights_json:
+                    try: op_weights = json.loads(s.operation_weights_json)
+                    except: pass
+                if not op_weights and s.body_weight:
+                    op_weights['Body'] = s.body_weight
+                    
                 sizes.append({
                     'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 
-                    'bodyWt': s.body_weight, 'otherWt': s.others_weight, 'totalWt': s.size_wt_gm, 
+                    'bodyWt': s.body_weight, 'opWeights': op_weights, 'totalWt': s.size_wt_gm, 
                     'lbs': str(s.total_lbs), 'bundleQty': str(s.bundle_qty) if s.bundle_qty else ""
                 })
             
@@ -286,6 +300,7 @@ def get_knitting_order_details_ajax(request, sys_id):
             colors_data.append({
                 'name': c.color_name, 
                 'packType': c.pack_type,
+                'lotRule': getattr(c, 'lot_rule', 'Fixed'), # Send lotRule
                 'ratio': c.assort_ratio,
                 'sizes': sizes, 
                 'yarns': yarns,

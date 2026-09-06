@@ -79,6 +79,7 @@ def get_issue_job_details_ajax(request, sys_id):
                                         'color': c.color_name,
                                         'size': sz_name,
                                         'lot': display_lot,
+                                        'lot_rule': getattr(c, 'lot_rule', 'Fixed'), # Lot Rule passed
                                         'alloc_qty': int(qty)
                                     })
                 except Exception as e:
