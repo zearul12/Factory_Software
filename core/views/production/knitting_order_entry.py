@@ -206,14 +206,14 @@ def save_knitting_order_ajax(request):
                         color=col_obj, 
                         size_name=sz_data['name'], 
                         order_qty=sz_data['oQty'],
-                        plan_qty=sz_data['pQty'], 
+                        plan_qty=sz_data['pQty'],
+                        restricted_qty=to_i(sz_data.get('rQty')) if sz_data.get('rQty') else 0, # <-- এই নতুন লাইনটি যোগ করুন
                         body_weight=body_wt,
                         others_weight=0,
-                        operation_weights_json=json.dumps(op_wts), # Dynamic Operation Weights
+                        operation_weights_json=json.dumps(op_wts),
                         size_wt_gm=to_i(sz_data.get('totalWt')),
                         total_lbs=sz_data['lbs'],
-                        bundle_qty=int(sz_data.get('bundleQty') or 0), 
-                        sort_order=sz_data['sort']
+                        bundle_qty=int(sz_data.get('bundleQty') or 0), sort_order=sz_data['sort']
                     )
                 
                 frontend_yarn_map = {}
@@ -274,6 +274,7 @@ def get_knitting_order_details_ajax(request, sys_id):
                     
                 sizes.append({
                     'name': s.size_name, 'oQty': s.order_qty, 'pQty': s.plan_qty, 
+                    'rQty': s.restricted_qty or "",
                     'bodyWt': s.body_weight, 'opWeights': op_weights, 'totalWt': s.size_wt_gm, 
                     'lbs': str(s.total_lbs), 'bundleQty': str(s.bundle_qty) if s.bundle_qty else ""
                 })

@@ -136,7 +136,7 @@
             <div style="display: flex; gap: 10px;">
                 <div class="form-group" style="flex: 1;">
                     <label>PLAN % <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9]/g,''); calcAll();" style="height: 35px;" autocomplete="off">
+                    <input type="text" id="m_planPct" class="form-control fast-nav" placeholder="%" oninput="this.value=this.value.replace(/[^0-9.]/g,''); calcAll();" style="height: 35px;" autocomplete="off">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label>GAUGE <span style="color:#e74c3c;">*</span></label>
@@ -409,6 +409,18 @@
 
         // Generic & Matrix & Yarn Vertical Navigation
         if(e.key === 'Enter') {
+            // Matrix Size Name Jump
+            if (e.target.classList.contains('matrix-sz-name')) {
+                e.preventDefault(); 
+                let inputs = Array.from(document.querySelectorAll('.matrix-sz-name'));
+                let idx = inputs.indexOf(e.target); 
+                if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select(); }
+                else if (idx === inputs.length - 1) {
+                    let firstQty = document.querySelector('.matrix-qty');
+                    if(firstQty) { firstQty.focus(); firstQty.select(); }
+                }
+                return; 
+            }
             // Matrix Quantity Jump
             if (e.target.classList.contains('matrix-qty')) {
                 e.preventDefault(); 
@@ -799,7 +811,8 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
             <th width="3%">#</th>
             <th width="10%">SIZE NAME <span style="color:#e74c3c;">*</span></th>
             <th width="9%">ORDER QTY <span style="color:#e74c3c;">*</span></th>
-            <th width="9%">PLAN QTY (+<span id="displayPct">0</span>%)</th>`;
+            <th width="9%">PLAN QTY (+<span id="displayPct">0</span>%)</th>
+            <th width="8%">RESTR. QTY <br><small style="color:#777;">(Max Issue)</small></th>`;
         
         ops.forEach(op => {
             let copyBtn = (op.toLowerCase() !== 'body') ? `<button type="button" style="border: none; background: #3498db; color: white; border-radius: 3px; padding: 1px 5px; font-size: 9px; cursor: pointer; margin-left: 4px;" onclick="copyDownOp('${op}')" title="Copy 1st value to all"><i class="fa-solid fa-copy"></i></button>` : '';
@@ -830,21 +843,80 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
                 return `<td><input type="text" autocomplete="off" class="td-input matrix-op-wt" data-op="${op}" value="${val}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateOpWeight('${s.id}', '${op}', this.value)"></td>`;
             }).join('');
 
-            return `
-            <tr>
-                <td>${i+1}</td>
-                <td><input type="text" id="${szNameId}" autocomplete="off" class="td-input ${szHi}" value="${s.name}" oninput="updateSzName('${s.id}', this.value)"></td>
-                <td><input type="text" id="${qId}" autocomplete="off" class="td-input matrix-qty ${qHi}" value="${s.oQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)"></td>
-                <td id="pQty_${s.id}" style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">${s.pQty}</td>
-                ${opTds}
-                <td id="totWt_${s.id}" style="font-weight:bold; background:rgba(0,0,0,0.02);">${s.totalWt}</td>
-                <td id="lbs_${s.id}" style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">0</td>
-                <td><input type="text" id="${bId}" autocomplete="off" class="td-input matrix-bundle" value="${s.bundleQty}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)"></td>
-                <td>
-                    <button class="btn-circle btn-plus" style="margin-right:5px;" onclick="addSz(${i})"><i class="fa-solid fa-plus"></i></button>
-                    <button class="btn-circle btn-minus" onclick="delSz('${s.id}')"><i class="fa-solid fa-minus"></i></button>
-                </td>
-            </tr>`;
+           return `
+    <tr>
+        <td>${i+1}</td>
+
+        <td>
+            <input type="text"
+                id="${szNameId}"
+                autocomplete="off"
+                class="td-input ${szHi}"
+                value="${s.name}"
+                oninput="updateSzName('${s.id}', this.value)">
+        </td>
+
+        <td>
+            <input type="text"
+                id="${qId}"
+                autocomplete="off"
+                class="td-input matrix-qty ${qHi}"
+                value="${s.oQty}"
+                placeholder="0"
+                oninput="this.value=this.value.replace(/[^0-9]/g,''); updateQ('${s.id}', this.value)">
+        </td>
+
+        <td id="pQty_${s.id}"
+            style="color:#27ae60; font-weight:bold; background:rgba(39, 174, 96, 0.05);">
+            ${s.pQty}
+        </td>
+
+        <!-- নতুন RQty -->
+        <td>
+            <input type="text"
+                id="rqty_${cIdx}_${i}"
+                autocomplete="off"
+                class="td-input matrix-rqty"
+                value="${s.rQty || ''}"
+                placeholder="Auto"
+                oninput="this.value=this.value.replace(/[^0-9]/g,''); updateRQty('${s.id}', this.value)">
+        </td>
+
+        ${opTds}
+
+        <td id="totWt_${s.id}"
+            style="font-weight:bold; background:rgba(0,0,0,0.02);">
+            ${s.totalWt}
+        </td>
+
+        <td id="lbs_${s.id}"
+            style="color:#e74c3c; font-weight:bold; background:rgba(231, 76, 60, 0.05);">
+            0
+        </td>
+
+        <td>
+            <input type="text"
+                id="${bId}"
+                autocomplete="off"
+                class="td-input matrix-bundle"
+                value="${s.bundleQty}"
+                placeholder="0"
+                oninput="this.value=this.value.replace(/[^0-9]/g,''); updateBundle('${s.id}', this.value)">
+        </td>
+
+        <td>
+            <button class="btn-circle btn-plus"
+                style="margin-right:5px;"
+                onclick="addSz(${i})">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+
+            <button class="btn-circle btn-minus"
+                onclick="delSz('${s.id}')">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+        </td>
+    </tr>`;
         }).join(''); 
     }
     function copyDownOp(opName) {
@@ -1767,7 +1839,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
                         hasError = true;
                     }
                 });
-                if(!sz.totalWt || sz.totalWt <= 0) { showModal(`Total Weight must be greater than 0 for size: ${sz.name} in color: ${c.name}`); hasError = true; } { showModal(`BODY WT (gm) is required for size: ${sz.name} in color: ${c.name}`); hasError = true; }
+               if(!sz.totalWt || sz.totalWt <= 0) { showModal(`Total Weight must be greater than 0 for size: ${sz.name} in color: ${c.name}`); hasError = true; }
             });
             
             if(c.yarns.length === 0) { showModal(`Please add at least one Yarn for color: ${c.name}`); hasError = true; }
@@ -1827,7 +1899,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
         let payload = {
             system_id: window.currentSystemId,
             job_no: jobNo, buyer_name: bName, style_no: document.getElementById('m_style').value, po_list: poList.join(', '),
-            plan_pct: parseInt(document.getElementById('m_planPct').value) || 0, gauge: document.getElementById('m_gauge').value,
+            plan_pct: parseFloat(document.getElementById('m_planPct').value) || 0, gauge: document.getElementById('m_gauge').value,
             kcd_date: document.getElementById('m_kcdDate').value, operations: orderData.ops.join(', '),
             total_color: parseInt(document.getElementById('sumColor').innerText), 
             total_size: parseInt(document.getElementById('sumSize').innerText), total_order_qty: parseInt(document.getElementById('sumOrdQty').innerText.replace(/,/g, '')),
@@ -1841,7 +1913,7 @@ div.innerHTML = `<b>${job.job_no}</b> - ${job.buyer} - <b>${job.style}</b> -----
                 sizes: c.sizes.map(s => ({
                     id: s.id, name: s.name, oQty: s.oQty, pQty: s.pQty,
                     opWeights: s.opWeights, bodyWt: s.bodyWt, totalWt: s.totalWt,
-                    lbs: s.lbs, bundleQty: s.bundleQty, sort: s.sort
+                    lbs: s.lbs, bundleQty: s.bundleQty, rQty: s.rQty, sort: s.sort
                 })),
                 yarns: c.yarns.map(y => ({ 
                     id: y.id, name: y.name, type: y.type, parentId: y.parentId, 

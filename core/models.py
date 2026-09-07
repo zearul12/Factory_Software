@@ -57,7 +57,7 @@ class KnittingOrder(models.Model):
     style_no = models.CharField(max_length=100)
     po_numbers = models.TextField()
     
-    plan_pct = models.IntegerField(default=0)
+    plan_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     gauge = models.CharField(max_length=50, blank=True, null=True)
     kcd_date = models.DateField()
     operations = models.TextField()
@@ -110,6 +110,7 @@ class KnittingSize(models.Model):
     size_name = models.CharField(max_length=50)
     order_qty = models.IntegerField(default=0)
     plan_qty = models.IntegerField(default=0)
+    restricted_qty = models.IntegerField(default=0, blank=True, null=True)
     # New Weight Fields
     body_weight = models.IntegerField(default=0)
     others_weight = models.IntegerField(default=0)
@@ -181,7 +182,7 @@ class YarnReceive(models.Model):
     buyer_name = models.CharField(max_length=100)
     style_no = models.CharField(max_length=100)
     po_no = models.CharField(max_length=100)
-    plan_pct = models.IntegerField(default=0)
+    plan_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     color = models.CharField(max_length=100)
     
     yarn_name = models.CharField(max_length=150)

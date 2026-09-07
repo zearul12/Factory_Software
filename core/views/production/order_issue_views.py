@@ -86,9 +86,11 @@ def get_issue_job_details_ajax(request, sys_id):
                     print("Error parsing allocation:", e)
 
             for s in c.sizes.all():
+                # ম্যাজিক: Restricted Qty দেওয়া থাকলে Issue পেজ সেটাকেই Plan Qty ধরবে!
+                effective_plan_qty = s.restricted_qty if s.restricted_qty else s.plan_qty
                 matrix_data.append({
                     'color': c.color_name, 'size': s.size_name,
-                    'plan_qty': s.plan_qty, 'bundle_qty': s.bundle_qty or 0, 'size_wt': s.size_wt_gm or 0
+                    'plan_qty': effective_plan_qty, 'bundle_qty': s.bundle_qty or 0, 'size_wt': s.size_wt_gm or 0
                 })
         
         issues = KnittingIssue.objects.filter(job_no=order.job_no).exclude(status='Deleted')
