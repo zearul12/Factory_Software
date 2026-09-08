@@ -99,23 +99,24 @@ def save_knitting_order_ajax(request):
                 old_status = order.status
                 
                 # --- CHECK TOP-LEVEL FIELDS (These will trigger Pending and Highlight) ---
-                if str(order.job_no) != str(data['job_no']): major_changed.append('job_sequence')
-                if str(order.buyer.buyer_name) != str(buyer.buyer_name): major_changed.append('m_buyer')
-                if str(order.style_no) != str(data['style_no']): major_changed.append('m_style')
-                if str(order.po_numbers) != str(data['po_list']): major_changed.append('m_po')
-                if str(order.plan_pct) != str(data['plan_pct']): major_changed.append('m_planPct')
-                if str(order.gauge) != str(data['gauge']): major_changed.append('m_gauge')
+                if str(order.job_no or '') != str(data.get('job_no', '')): major_changed.append('job_sequence')
+                if str(order.buyer.buyer_name or '') != str(buyer.buyer_name or ''): major_changed.append('m_buyer')
+                if str(order.style_no or '') != str(data.get('style_no', '')): major_changed.append('m_style')
+                if str(order.po_numbers or '') != str(data.get('po_list', '')): major_changed.append('m_po')
                 
-                # Date format fix to ensure it checks correctly
-                db_kcd = order.kcd_date.strftime('%Y-%m-%d') if order.kcd_date else ''
-                if str(db_kcd) != str(data['kcd_date']): major_changed.append('m_kcdDate')
+                # ম্যাজিক ১: Plan % এর হাইলাইট বাগ ফিক্স (ফ্লোট কনভার্সন)
+                if to_f(order.plan_pct) != to_f(data.get('plan_pct', 0)): major_changed.append('m_planPct')
+                if str(order.gauge or '') != str(data.get('gauge', '')): major_changed.append('m_gauge')
+                
+                # ম্যাজিক ২: আপনার কথামতো KCD Date, Pack Type, Lot Rule, Body Wt, Yarn Consumption
+                # এইগুলো চেক থেকে পুরোপুরি বাদ দেওয়া হয়েছে। তাই এগুলো এডিট করলে Pending-এ যাবে না।
                 
                 # --- CHECK SIZE MATRIX & COLOR ---
-                if float(order.total_order_qty) != float(data['total_order_qty']) or float(order.total_plan_qty) != float(data['total_plan_qty']):
+                if to_i(order.total_order_qty) != to_i(data.get('total_order_qty')) or to_i(order.total_plan_qty) != to_i(data.get('total_plan_qty')):
                     major_changed.append('size_matrix')
                 
                 old_colors = list(order.colors.all().order_by('id'))
-                new_colors = data['colors']
+                new_colors = data.get('colors', [])
                 
                 if len(old_colors) != len(new_colors):
                     major_changed.append('size_matrix')
@@ -123,14 +124,12 @@ def save_knitting_order_ajax(request):
                 for c_idx, c_data in enumerate(new_colors):
                     if c_idx < len(old_colors):
                         old_c = old_colors[c_idx]
-                        
-                        # Check Color Name
-                        if str(old_c.color_name) != str(c_data['name']):
+                        if str(old_c.color_name or '') != str(c_data.get('name', '')):
                             major_changed.append('currColorName')
                             major_changed.append(f'col_badge_{c_idx}')
                             
                         old_sizes = list(old_c.sizes.all().order_by('sort_order'))
-                        new_sizes = c_data['sizes']
+                        new_sizes = c_data.get('sizes', [])
                         
                         if len(old_sizes) != len(new_sizes):
                             major_changed.append('size_matrix')
@@ -138,12 +137,12 @@ def save_knitting_order_ajax(request):
                         for s_idx, s_data in enumerate(new_sizes):
                             if s_idx < len(old_sizes):
                                 old_s = old_sizes[s_idx]
-                                # Check Size Name
-                                if str(old_s.size_name) != str(s_data['name']):
+                                if str(old_s.size_name or '') != str(s_data.get('name', '')):
                                     major_changed.append(f'sz_name_{c_idx}_{s_idx}')
-                                # Check Order Qty
-                                if str(old_s.order_qty) != str(s_data['oQty']):
+                                if str(old_s.order_qty or '') != str(s_data.get('oQty', '')):
                                     major_changed.append(f'qty_{c_idx}_{s_idx}')
+                                if str(old_s.restricted_qty) != to_i(s_data.get('rQty')):
+                                    major_changed.append(f'rqty_{c_idx}_{s_idx}')
                     else:
                         major_changed.append('size_matrix')
                 
